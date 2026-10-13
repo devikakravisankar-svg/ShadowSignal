@@ -1,0 +1,3669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShadowSignal — Lunar Habitat Energy Simulator</title>
+  <style>
+/* ═══════════════════════════════════════════════════
+   ShadowSignal — Deep-space aerospace dashboard style
+   ═══════════════════════════════════════════════════ */
+
+:root {
+  --bg-void:       #07090f;
+  --bg-dark:       #0c0f1a;
+  --bg-card:       #10141f;
+  --bg-card-hover: #141925;
+  --bg-sidebar:    #0a0d17;
+  --border:        #1e2535;
+  --border-bright: #2a3550;
+  --text-primary:  #e8eaf0;
+  --text-muted:    #6b7899;
+  --text-dim:      #3d4a66;
+  --accent-cyan:   #67e8f9;
+  --accent-blue:   #38bdf8;
+  --accent-navy:   #1e3a5f;
+  --accent-violet: #7c3aed;
+  --accent-violet-muted: #4c1d95;
+  --solar-color:   #fbbf24;
+  --demand-color:  #f87171;
+  --battery-color: #34d399;
+  --risk-low:      #34d399;
+  --risk-mid:      #fbbf24;
+  --risk-high:     #f87171;
+  --normal-color:  #34d399;
+  --warning-color: #fbbf24;
+  --critical-color:#f87171;
+  --sidebar-w:     220px;
+  --topbar-h:      56px;
+  --radius:        6px;
+  --radius-sm:     4px;
+  --transition:    0.2s ease;
+  font-size: 14px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg-void);
+  color: var(--text-primary);
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+/* ═══════ SCROLLBAR ═══════ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-dark); }
+::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
+
+/* ═══════ SIDEBAR ═══════ */
+.sidebar {
+  position: fixed;
+  top: 0; left: 0;
+  width: var(--sidebar-w);
+  height: 100vh;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  transition: transform var(--transition);
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 16px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.logo-icon svg { flex-shrink: 0; }
+.logo-title {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  letter-spacing: 0.04em;
+}
+.logo-sub {
+  display: block;
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 10px 0;
+  overflow-y: auto;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 16px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  border-left: 2px solid transparent;
+  transition: all var(--transition);
+}
+.nav-item:hover {
+  color: var(--text-primary);
+  background: rgba(103,232,249,0.05);
+}
+.nav-item.active {
+  color: var(--accent-cyan);
+  background: rgba(103,232,249,0.08);
+  border-left-color: var(--accent-cyan);
+}
+.nav-item i { width: 16px; height: 16px; flex-shrink: 0; }
+
+.sidebar-status {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: background var(--transition);
+  flex-shrink: 0;
+}
+.status-dot.normal   { background: var(--normal-color);   box-shadow: 0 0 6px var(--normal-color); }
+.status-dot.warning  { background: var(--warning-color);  box-shadow: 0 0 6px var(--warning-color); }
+.status-dot.critical { background: var(--critical-color); box-shadow: 0 0 8px var(--critical-color); animation: pulse-crit 1s infinite; }
+
+@keyframes pulse-crit {
+  0%,100% { opacity: 1; }
+  50%      { opacity: 0.4; }
+}
+
+/* ═══════ MAIN CONTENT ═══════ */
+.main-content {
+  margin-left: var(--sidebar-w);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ═══════ TOPBAR ═══════ */
+.topbar {
+  position: sticky;
+  top: 0;
+  height: var(--topbar-h);
+  background: rgba(10,13,23,0.95);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 20px;
+  z-index: 50;
+  backdrop-filter: blur(10px);
+}
+.hamburger {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+}
+.topbar-mission { flex: 1; overflow: hidden; }
+.mission-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  display: block;
+}
+.mission-name {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+.topbar-time {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.topbar-time i { width: 13px; height: 13px; }
+.topbar-time .label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+}
+#top-sim-time {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  color: var(--accent-cyan);
+  font-weight: 600;
+}
+
+.risk-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 3px 8px;
+  border-radius: 2px;
+  border: 1px solid;
+}
+.risk-badge.NORMAL   { color: var(--normal-color);   border-color: var(--normal-color);   background: rgba(52,211,153,0.08); }
+.risk-badge.WARNING  { color: var(--warning-color);  border-color: var(--warning-color);  background: rgba(251,191,36,0.08); }
+.risk-badge.CRITICAL { color: var(--critical-color); border-color: var(--critical-color); background: rgba(248,113,113,0.08); animation: pulse-crit 1.2s infinite; }
+
+.sim-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+}
+.sim-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: background var(--transition);
+}
+.sim-indicator.running .sim-dot {
+  background: var(--normal-color);
+  box-shadow: 0 0 5px var(--normal-color);
+  animation: pulse-run 1s infinite;
+}
+.sim-indicator.running { color: var(--normal-color); }
+@keyframes pulse-run {
+  0%,100% { opacity: 1; }
+  50%      { opacity: 0.5; }
+}
+
+/* ═══════ PAGE SECTIONS ═══════ */
+.page-section {
+  display: none;
+  padding: 20px 24px;
+  flex: 1;
+  animation: fadeIn 0.2s ease;
+}
+.page-section.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+.section-header { margin-bottom: 20px; }
+.section-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.section-header h2 i { width: 18px; height: 18px; color: var(--accent-cyan); }
+.section-desc { color: var(--text-muted); font-size: 13px; }
+
+/* ═══════ CARDS ═══════ */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+}
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+}
+.card-header i { width: 14px; height: 14px; }
+
+/* ═══════ METRIC CARDS ═══════ */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.metric-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color var(--transition);
+}
+.metric-card:hover { border-color: var(--border-bright); }
+
+.metric-icon {
+  width: 32px; height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2px;
+}
+.metric-icon i { width: 16px; height: 16px; }
+.solar-icon   { background: rgba(251,191,36,0.12);  color: var(--solar-color); }
+.demand-icon  { background: rgba(248,113,113,0.12); color: var(--demand-color); }
+.battery-icon { background: rgba(52,211,153,0.12);  color: var(--battery-color); }
+.backup-icon  { background: rgba(103,232,249,0.12); color: var(--accent-cyan); }
+.shortage-icon{ background: rgba(248,113,113,0.12); color: var(--risk-high); }
+.risk-icon    { background: rgba(124,58,237,0.12);  color: #a78bfa; }
+
+.metric-body { flex: 1; }
+.metric-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 2px;
+}
+.metric-value {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.metric-sub {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+.metric-bar-track {
+  height: 2px;
+  background: var(--border);
+  border-radius: 1px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+.metric-bar {
+  height: 100%;
+  border-radius: 1px;
+  transition: width 0.5s ease;
+}
+.solar-bar   { background: var(--solar-color); }
+.demand-bar  { background: var(--demand-color); }
+.battery-bar { background: var(--battery-color); }
+.risk-bar    { background: var(--accent-violet); }
+
+/* ═══════ CHARTS GRID ═══════ */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+.chart-card.wide { grid-column: 1; }
+.chart-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.chart-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.chart-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--normal-color);
+  border: 1px solid var(--normal-color);
+  padding: 1px 5px;
+  border-radius: 2px;
+  animation: pulse-run 2s infinite;
+}
+.chart-wrap {
+  position: relative;
+  height: 180px;
+}
+.chart-card .chart-wrap { height: 160px; }
+
+/* ═══════ ENERGY FLOW ═══════ */
+.flow-card .card-header { margin-bottom: 0; }
+.energy-flow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  flex-wrap: wrap;
+}
+.flow-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 20px;
+  min-width: 120px;
+}
+.flow-node i { width: 24px; height: 24px; color: var(--accent-cyan); }
+.solar-node i    { color: var(--solar-color); }
+.battery-node i  { color: var(--battery-color); }
+.habitat-node i  { color: var(--accent-blue); }
+.flow-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-align: center;
+}
+.flow-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.flow-arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.flow-arrow svg { width: 64px; height: 16px; }
+.flow-arrow-val {
+  font-size: 10px;
+  color: var(--accent-cyan);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ═══════ SIMULATION CONTROLS ═══════ */
+.sim-control-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.speed-presets {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 3px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.speed-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-right: 4px;
+}
+.speed-label i { width: 12px; height: 12px; color: var(--accent-cyan); }
+
+.btn-speed {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.btn-speed:hover {
+  color: var(--text-primary);
+  background: rgba(103,232,249,0.08);
+}
+.btn-speed.active {
+  color: var(--accent-cyan);
+  background: rgba(103,232,249,0.15);
+  border-color: rgba(103,232,249,0.4);
+  box-shadow: 0 0 6px rgba(103,232,249,0.2);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+  letter-spacing: 0.04em;
+  text-decoration: none;
+}
+.btn i { width: 13px; height: 13px; }
+.btn-primary  { background: rgba(56,189,248,0.15); color: var(--accent-blue);   border-color: rgba(56,189,248,0.3); }
+.btn-primary:hover { background: rgba(56,189,248,0.25); }
+.btn-secondary{ background: rgba(107,120,153,0.12); color: var(--text-muted);    border-color: var(--border); }
+.btn-secondary:hover { color: var(--text-primary); }
+.btn-warning  { background: rgba(251,191,36,0.12);  color: var(--solar-color);   border-color: rgba(251,191,36,0.3); }
+.btn-warning:hover { background: rgba(251,191,36,0.22); }
+.btn-danger   { background: rgba(248,113,113,0.12); color: var(--demand-color);  border-color: rgba(248,113,113,0.3); }
+.btn-danger:hover { background: rgba(248,113,113,0.22); }
+.btn-accent   { background: rgba(124,58,237,0.18);  color: #c4b5fd;              border-color: rgba(124,58,237,0.4); }
+.btn-accent:hover { background: rgba(124,58,237,0.3); }
+.btn-lg { padding: 10px 20px; font-size: 13px; margin-bottom: 16px; }
+.btn-sm { padding: 4px 10px; font-size: 11px; }
+
+/* ═══════ SCENARIOS ═══════ */
+.scenario-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 14px;
+}
+.scenario-btn {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all var(--transition);
+  text-align: left;
+}
+.scenario-btn:hover { border-color: var(--border-bright); color: var(--text-primary); }
+.scenario-btn.active { border-color: var(--accent-cyan); color: var(--text-primary); background: rgba(103,232,249,0.06); }
+.scenario-btn i { width: 20px; height: 20px; flex-shrink: 0; color: var(--accent-cyan); margin-top: 2px; }
+.scenario-btn strong { display: block; font-size: 13px; margin-bottom: 3px; }
+.scenario-btn p { font-size: 11px; line-height: 1.4; }
+
+/* ═══════ PARAM CARDS ═══════ */
+.params-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.param-card { padding: 0; }
+.param-group {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.param-group:last-child { border-bottom: none; }
+.param-group label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+.param-val {
+  font-weight: 700;
+  color: var(--accent-cyan);
+  font-variant-numeric: tabular-nums;
+  min-width: 50px;
+  text-align: right;
+}
+input[type="range"] {
+  width: 100%;
+  height: 3px;
+  appearance: none;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 13px; height: 13px;
+  border-radius: 50%;
+  background: var(--accent-cyan);
+  box-shadow: 0 0 4px rgba(103,232,249,0.5);
+  transition: transform var(--transition);
+}
+input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+.sim-info-box { padding: 0 16px 14px; }
+.sim-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.sim-info-row:last-child { border-bottom: none; }
+.sim-info-row span { color: var(--text-muted); }
+.sim-info-row strong { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+/* ═══════ FORECAST SECTION ═══════ */
+.forecast-summary-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background: rgba(103,232,249,0.04);
+  border-color: rgba(103,232,249,0.2);
+}
+.forecast-icon { color: var(--accent-cyan); flex-shrink: 0; margin-top: 2px; }
+.forecast-icon i { width: 20px; height: 20px; }
+.forecast-text { font-size: 13px; color: var(--text-primary); line-height: 1.6; }
+
+.horizon-cards {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.horizon-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+}
+.horizon-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+.horizon-val {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.horizon-pct {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 2px 0;
+}
+.horizon-status {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  display: inline-block;
+}
+.horizon-status.ok       { color: var(--normal-color);   background: rgba(52,211,153,0.1); }
+.horizon-status.shortage { color: var(--critical-color); background: rgba(248,113,113,0.1); }
+
+.forecast-params { padding: 0; }
+.forecast-params-grid {
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  gap: 0;
+}
+.fp-item {
+  padding: 12px 16px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.fp-item:last-child { border-right: none; }
+.fp-item span { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.fp-item strong { font-size: 15px; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.forecast-disclaimer {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.forecast-disclaimer i { width: 13px; height: 13px; flex-shrink: 0; margin-top: 1px; }
+
+/* ═══════ SURVIVAL MODE ═══════ */
+.survival-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+.survival-status-bar.NORMAL   { border-color: rgba(52,211,153,0.3);  background: rgba(52,211,153,0.05); }
+.survival-status-bar.WARNING  { border-color: rgba(251,191,36,0.3);  background: rgba(251,191,36,0.05); }
+.survival-status-bar.CRITICAL { border-color: rgba(248,113,113,0.3); background: rgba(248,113,113,0.05); }
+.survival-status-icon i { width: 20px; height: 20px; }
+.survival-status-bar.NORMAL   .survival-status-icon { color: var(--normal-color); }
+.survival-status-bar.WARNING  .survival-status-icon { color: var(--warning-color); }
+.survival-status-bar.CRITICAL .survival-status-icon { color: var(--critical-color); }
+
+.comparison-grid {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 20px;
+}
+.comparison-col { text-align: center; min-width: 140px; }
+.comp-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+.before-col .comp-label { color: var(--warning-color); }
+.after-col  .comp-label { color: var(--normal-color); }
+.comp-val {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.comp-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; margin-bottom: 12px; }
+.comparison-arrow { color: var(--text-dim); }
+.comparison-arrow i { width: 24px; height: 24px; }
+.savings-banner {
+  text-align: center;
+  padding: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-muted);
+  background: rgba(52,211,153,0.04);
+}
+.savings-banner strong { color: var(--normal-color); }
+
+.survival-note {
+  padding: 10px 16px;
+  font-size: 12px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.survival-action-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition);
+}
+.survival-action-item:last-child { border-bottom: none; }
+.survival-action-item:hover { background: var(--bg-card-hover); }
+.action-checkbox { width: 16px; height: 16px; accent-color: var(--accent-cyan); cursor: pointer; flex-shrink: 0; }
+.action-name { flex: 1; font-size: 13px; color: var(--text-primary); }
+.action-detail { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.action-saving {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--normal-color);
+  font-variant-numeric: tabular-nums;
+  min-width: 60px;
+  text-align: right;
+}
+
+.survival-footer {
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.apply-result {
+  font-size: 12px;
+  color: var(--normal-color);
+  padding: 6px 12px;
+  border: 1px solid rgba(52,211,153,0.3);
+  border-radius: var(--radius-sm);
+  background: rgba(52,211,153,0.07);
+}
+
+.priority-legend { padding: 14px 16px; }
+.pl-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.pl-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.critical  .pl-dot { background: var(--critical-color); box-shadow: 0 0 5px var(--critical-color); }
+.important .pl-dot { background: var(--warning-color); }
+.deferrable .pl-dot { background: var(--text-muted); }
+
+/* ═══════ ALERTS ═══════ */
+.alert-current {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.alert-current.NORMAL   { border-color: rgba(52,211,153,0.3);  background: rgba(52,211,153,0.04); }
+.alert-current.WARNING  { border-color: rgba(251,191,36,0.3);  background: rgba(251,191,36,0.04); }
+.alert-current.CRITICAL { border-color: rgba(248,113,113,0.3); background: rgba(248,113,113,0.04); }
+.alert-current-icon i { width: 22px; height: 22px; }
+.alert-current.NORMAL   .alert-current-icon { color: var(--normal-color); }
+.alert-current.WARNING  .alert-current-icon { color: var(--warning-color); }
+.alert-current.CRITICAL .alert-current-icon { color: var(--critical-color); }
+.alert-curr-level {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+}
+.alert-curr-reason { font-size: 12px; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+
+.alert-table-wrap { overflow-x: auto; }
+.alert-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.alert-table th {
+  padding: 8px 14px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+.alert-table td {
+  padding: 9px 14px;
+  font-size: 12px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.alert-table tr:last-child td { border-bottom: none; }
+.alert-table tr:hover td { background: var(--bg-card-hover); }
+.empty-row { text-align: center; color: var(--text-dim); }
+.level-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  padding: 2px 7px;
+  border-radius: 2px;
+}
+.level-badge.NORMAL   { color: var(--normal-color);   background: rgba(52,211,153,0.12); }
+.level-badge.WARNING  { color: var(--warning-color);  background: rgba(251,191,36,0.12); }
+.level-badge.CRITICAL { color: var(--critical-color); background: rgba(248,113,113,0.12); }
+
+/* ═══════ ABOUT PAGE ═══════ */
+.about-hero {
+  display: flex;
+  gap: 20px;
+  padding: 0;
+  overflow: hidden;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.about-hero-art {
+  flex-shrink: 0;
+  background: var(--bg-void);
+}
+.about-hero-art canvas { display: block; }
+.about-hero-text {
+  flex: 1;
+  padding: 20px;
+  min-width: 260px;
+}
+.about-hero-text h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--accent-cyan);
+  margin-bottom: 10px;
+}
+.about-hero-text p { font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 10px; }
+.demo-badge {
+  display: inline-block;
+  font-size: 11px;
+  color: var(--warning-color);
+  border: 1px solid rgba(251,191,36,0.3);
+  background: rgba(251,191,36,0.06);
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  margin-top: 4px;
+}
+
+.about-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.about-card { padding: 0; }
+.about-list {
+  list-style: none;
+  padding: 12px 16px;
+}
+.about-list.numbered { list-style: decimal; padding-left: 32px; }
+.about-list li {
+  padding: 5px 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  line-height: 1.5;
+}
+.about-list li:last-child { border-bottom: none; }
+.about-list strong { color: var(--text-primary); }
+.code-block {
+  background: var(--bg-void);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin: 12px 16px;
+  font-size: 12px;
+  font-family: 'Courier New', monospace;
+  color: var(--accent-cyan);
+  line-height: 1.6;
+  white-space: pre;
+}
+
+/* ═══════ GUIDED DEMO BANNER ═══════ */
+.demo-banner {
+  background: linear-gradient(135deg, rgba(30, 58, 95, 0.45) 0%, rgba(16, 20, 31, 0.95) 100%);
+  border: 1px solid var(--accent-cyan);
+  box-shadow: 0 0 20px rgba(103, 232, 249, 0.15);
+  margin: 16px 24px 0;
+  animation: fadeIn 0.3s ease;
+  overflow: hidden;
+}
+.demo-banner-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: rgba(103, 232, 249, 0.08);
+  border-bottom: 1px solid rgba(103, 232, 249, 0.2);
+}
+.demo-banner-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--accent-cyan);
+}
+.demo-banner-title strong { color: var(--text-primary); }
+.demo-banner-title i { width: 15px; height: 15px; }
+.demo-close-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  transition: color var(--transition);
+}
+.demo-close-btn:hover { color: var(--text-primary); }
+.demo-close-btn i { width: 14px; height: 14px; }
+.demo-banner-body {
+  padding: 14px 16px;
+}
+.demo-banner-body p {
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+.demo-banner-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.demo-indicators {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.demo-dot {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-bright);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.demo-dot.active {
+  background: var(--accent-cyan);
+  color: var(--bg-void);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 8px rgba(103, 232, 249, 0.5);
+}
+.demo-dot.completed {
+  background: rgba(52, 211, 153, 0.2);
+  color: var(--normal-color);
+  border-color: var(--normal-color);
+}
+.demo-nav-btns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ═══════ MISSION IMPACT CARD ═══════ */
+.impact-card {
+  border-color: rgba(103, 232, 249, 0.3);
+  background: linear-gradient(180deg, rgba(16, 20, 31, 0.95) 0%, rgba(12, 18, 30, 0.95) 100%);
+}
+.impact-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 16px;
+}
+.impact-metric {
+  background: var(--bg-dark);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.impact-metric-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+.impact-metric-val {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  font-variant-numeric: tabular-nums;
+}
+.impact-metric-val.safe { color: var(--normal-color); }
+.impact-metric-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.impact-narrative {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  background: rgba(103, 232, 249, 0.03);
+}
+
+/* ═══════ PREDICTION ENGINE BREAKDOWN ═══════ */
+.engine-explain-card {
+  margin-top: 16px;
+}
+.engine-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 16px;
+}
+.engine-step {
+  display: flex;
+  gap: 12px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+.engine-step-num {
+  font-size: 20px;
+  font-weight: 800;
+  font-family: 'Courier New', monospace;
+  color: var(--accent-cyan);
+  line-height: 1;
+}
+.engine-step-body strong {
+  display: block;
+  font-size: 12px;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.engine-step-body p {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* ═══════ TOAST ═══════ */
+.toast {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius);
+  padding: 10px 16px;
+  font-size: 12px;
+  color: var(--text-primary);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all 0.25s ease;
+  pointer-events: none;
+  z-index: 1000;
+  max-width: 300px;
+}
+.toast.show { opacity: 1; transform: none; }
+.toast.success { border-color: rgba(52,211,153,0.5); color: var(--normal-color); }
+.toast.error   { border-color: rgba(248,113,113,0.5); color: var(--critical-color); }
+
+/* ═══════ UTILITY ═══════ */
+.hidden { display: none !important; }
+
+/* ═══════ RESPONSIVE ═══════ */
+@media (max-width: 1100px) {
+  .charts-grid { grid-template-columns: 1fr 1fr; }
+  .chart-card.wide { grid-column: 1 / -1; }
+  .params-grid { grid-template-columns: 1fr 1fr; }
+  .about-grid  { grid-template-columns: 1fr; }
+  .impact-grid { grid-template-columns: repeat(2, 1fr); }
+  .engine-steps-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 860px) {
+  :root { --sidebar-w: 0px; }
+  .sidebar { transform: translateX(-220px); width: 220px; }
+  .sidebar.open { transform: translateX(0); }
+  .main-content { margin-left: 0; }
+  .hamburger { display: flex; }
+  .scenario-buttons { grid-template-columns: 1fr; }
+  .charts-grid { grid-template-columns: 1fr; }
+  .horizon-cards { grid-template-columns: 1fr; }
+  .forecast-params-grid { grid-template-columns: 1fr 1fr; }
+  .impact-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .metrics-grid { grid-template-columns: 1fr 1fr; }
+  .params-grid  { grid-template-columns: 1fr; }
+  .page-section { padding: 14px 12px; }
+  .forecast-params-grid { grid-template-columns: 1fr; }
+}
+
+</style>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <!-- Lucide icons -->
+  <script src="https://unpkg.com/lucide@0.395.0/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+
+<!-- ═══════════════════════════════ SIDEBAR ═══════════════════════════════ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+        <circle cx="20" cy="20" r="18" stroke="#67e8f9" stroke-width="2"/>
+        <circle cx="20" cy="20" r="10" fill="#1e3a5f" stroke="#38bdf8" stroke-width="1.5"/>
+        <path d="M20 8 Q28 14 28 20 Q28 26 20 32" fill="#0f2a40" stroke="#67e8f9" stroke-width="1"/>
+        <circle cx="20" cy="20" r="3" fill="#67e8f9"/>
+      </svg>
+    </div>
+    <div class="logo-text">
+      <span class="logo-title">ShadowSignal</span>
+      <span class="logo-sub">Lunar Energy Sim</span>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a href="#overview"    class="nav-item active" data-section="overview">
+      <i data-lucide="layout-dashboard"></i><span>Overview</span>
+    </a>
+    <a href="#simulation"  class="nav-item" data-section="simulation">
+      <i data-lucide="sliders-horizontal"></i><span>Simulation</span>
+    </a>
+    <a href="#forecast"    class="nav-item" data-section="forecast">
+      <i data-lucide="trending-up"></i><span>Forecast</span>
+    </a>
+    <a href="#survival"    class="nav-item" data-section="survival">
+      <i data-lucide="shield-alert"></i><span>Survival Mode</span>
+    </a>
+    <a href="#alerts"      class="nav-item" data-section="alerts">
+      <i data-lucide="bell"></i><span>Alert History</span>
+    </a>
+    <a href="#about"       class="nav-item" data-section="about">
+      <i data-lucide="info"></i><span>About</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-status">
+    <div class="status-dot" id="sb-status-dot"></div>
+    <span id="sb-status-text">INITIALIZING</span>
+  </div>
+</aside>
+
+<!-- ════════════════════════════ MAIN CONTENT ════════════════════════════ -->
+<main class="main-content">
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <button class="hamburger" id="hamburger" aria-label="Toggle sidebar">
+      <i data-lucide="menu"></i>
+    </button>
+    <div class="topbar-mission">
+      <span class="mission-label">MISSION</span>
+      <span class="mission-name">ShadowSignal Alpha — Simulated Lunar Research Base</span>
+    </div>
+    <div class="topbar-right">
+      <button class="btn btn-sm btn-accent" id="btn-guided-tour" title="Run step-by-step hackathon demo walk-through">
+        <i data-lucide="sparkles"></i> <span>Guided Hackathon Demo</span>
+      </button>
+      <div class="topbar-time">
+        <i data-lucide="clock"></i>
+        <span class="label">SIM</span>
+        <span id="top-sim-time">00:00</span>
+      </div>
+      <div class="risk-badge" id="top-risk-badge">NORMAL</div>
+      <div class="sim-indicator" id="top-sim-running">
+        <span class="sim-dot"></span>
+        <span id="top-sim-label">PAUSED</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Guided Interactive Demo Modal / Overlay -->
+  <div class="demo-banner card" id="demo-banner" style="display:none;">
+    <div class="demo-banner-header">
+      <div class="demo-banner-title">
+        <i data-lucide="presentation"></i>
+        <span>GUIDED HACKATHON DEMO: <strong id="demo-step-title">Step 1 — Baseline Operation</strong></span>
+      </div>
+      <button class="demo-close-btn" id="btn-close-demo" title="Exit Tour"><i data-lucide="x"></i></button>
+    </div>
+    <div class="demo-banner-body">
+      <p id="demo-step-desc">Habitat operating under nominal sunlight. Solar panels supply surplus power and the battery is recharging.</p>
+      <div class="demo-banner-actions">
+        <div class="demo-indicators">
+          <span class="demo-dot active" data-step="1">1</span>
+          <span class="demo-dot" data-step="2">2</span>
+          <span class="demo-dot" data-step="3">3</span>
+          <span class="demo-dot" data-step="4">4</span>
+          <span class="demo-dot" data-step="5">5</span>
+          <span class="demo-dot" data-step="6">6</span>
+        </div>
+        <div class="demo-nav-btns">
+          <button class="btn btn-sm btn-secondary" id="btn-demo-prev"><i data-lucide="chevron-left"></i> Prev</button>
+          <button class="btn btn-sm btn-primary" id="btn-demo-next">Next Step <i data-lucide="chevron-right"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────────── SECTION: OVERVIEW ───────────── -->
+  <section class="page-section active" id="section-overview">
+
+    <!-- Metric cards row -->
+    <div class="metrics-grid">
+      <div class="metric-card" id="card-solar">
+        <div class="metric-icon solar-icon"><i data-lucide="sun"></i></div>
+        <div class="metric-body">
+          <div class="metric-label">Solar Generation</div>
+          <div class="metric-value" id="m-solar">—</div>
+          <div class="metric-sub">kW</div>
+        </div>
+        <div class="metric-bar-track"><div class="metric-bar solar-bar" id="bar-solar"></div></div>
+      </div>
+
+      <div class="metric-card" id="card-demand">
+        <div class="metric-icon demand-icon"><i data-lucide="zap"></i></div>
+        <div class="metric-body">
+          <div class="metric-label">Energy Demand</div>
+          <div class="metric-value" id="m-demand">—</div>
+          <div class="metric-sub">kW</div>
+        </div>
+        <div class="metric-bar-track"><div class="metric-bar demand-bar" id="bar-demand"></div></div>
+      </div>
+
+      <div class="metric-card" id="card-battery">
+        <div class="metric-icon battery-icon"><i data-lucide="battery-charging"></i></div>
+        <div class="metric-body">
+          <div class="metric-label">Battery Charge</div>
+          <div class="metric-value" id="m-battery">—</div>
+          <div class="metric-sub" id="m-battery-pct">kWh / —%</div>
+        </div>
+        <div class="metric-bar-track"><div class="metric-bar battery-bar" id="bar-battery"></div></div>
+      </div>
+
+      <div class="metric-card" id="card-backup">
+        <div class="metric-icon backup-icon"><i data-lucide="clock-4"></i></div>
+        <div class="metric-body">
+          <div class="metric-label">Backup Reserve</div>
+          <div class="metric-value" id="m-backup">—</div>
+          <div class="metric-sub">hours remaining</div>
+        </div>
+      </div>
+
+      <div class="metric-card" id="card-shortage">
+        <div class="metric-icon shortage-icon"><i data-lucide="triangle-alert"></i></div>
+        <div class="metric-body">
+          <div class="metric-label">Predicted Shortage</div>
+          <div class="metric-value" id="m-shortage">—</div>
+          <div class="metric-sub" id="m-shortage-sub">hours</div>
+        </div>
+      </div>
+
+      <div class="metric-card" id="card-risk">
+        <div class="metric-icon risk-icon"><i data-lucide="activity"></i></div>
+        <div class="metric-body">
+          <div class="metric-label">Risk Score</div>
+          <div class="metric-value" id="m-risk">—</div>
+          <div class="metric-sub">/ 100</div>
+        </div>
+        <div class="metric-bar-track"><div class="metric-bar risk-bar" id="bar-risk"></div></div>
+      </div>
+    </div>
+
+    <!-- Charts row -->
+    <div class="charts-grid">
+      <div class="chart-card wide">
+        <div class="chart-card-header">
+          <span class="chart-title">Solar Generation vs Energy Demand</span>
+          <span class="chart-badge">LIVE</span>
+        </div>
+        <div class="chart-wrap"><canvas id="chart-gen-demand"></canvas></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <span class="chart-title">Battery State of Charge</span>
+        </div>
+        <div class="chart-wrap"><canvas id="chart-battery"></canvas></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <span class="chart-title">Subsystem Power Demand</span>
+        </div>
+        <div class="chart-wrap"><canvas id="chart-subsystems"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Energy Flow -->
+    <div class="card flow-card">
+      <div class="card-header"><i data-lucide="git-branch"></i> Energy Flow Diagram</div>
+      <div class="energy-flow" id="energy-flow">
+        <div class="flow-node solar-node">
+          <i data-lucide="sun"></i>
+          <div class="flow-label">Solar Panels</div>
+          <div class="flow-val" id="flow-solar">— kW</div>
+        </div>
+        <div class="flow-arrow" id="flow-arr1">
+          <svg viewBox="0 0 80 20"><path d="M0 10 L70 10" stroke="#67e8f9" stroke-width="2"/><polygon points="70,5 80,10 70,15" fill="#67e8f9"/></svg>
+          <span class="flow-arrow-val" id="flow-arr1-val">— kW</span>
+        </div>
+        <div class="flow-node battery-node">
+          <i data-lucide="battery-charging"></i>
+          <div class="flow-label">Battery Storage</div>
+          <div class="flow-val" id="flow-battery">— kWh</div>
+        </div>
+        <div class="flow-arrow" id="flow-arr2">
+          <svg viewBox="0 0 80 20"><path d="M0 10 L70 10" stroke="#67e8f9" stroke-width="2"/><polygon points="70,5 80,10 70,15" fill="#67e8f9"/></svg>
+          <span class="flow-arrow-val" id="flow-arr2-val">— kW</span>
+        </div>
+        <div class="flow-node habitat-node">
+          <i data-lucide="home"></i>
+          <div class="flow-label">Habitat Systems</div>
+          <div class="flow-val" id="flow-habitat">— kW</div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ───────────── SECTION: SIMULATION ───────────── -->
+  <section class="page-section" id="section-simulation">
+    <div class="section-header">
+      <h2><i data-lucide="sliders-horizontal"></i> Energy Simulation</h2>
+      <p class="section-desc">Configure and control the lunar habitat energy simulation. All values are demonstration data.</p>
+    </div>
+
+    <!-- Simulation Controls -->
+    <div class="sim-control-bar">
+      <button class="btn btn-primary" id="btn-start"><i data-lucide="play"></i> Start</button>
+      <button class="btn btn-warning" id="btn-pause"><i data-lucide="pause"></i> Pause</button>
+      <button class="btn btn-secondary" id="btn-resume"><i data-lucide="play-circle"></i> Resume</button>
+      <button class="btn btn-danger"  id="btn-reset"><i data-lucide="rotate-ccw"></i> Reset</button>
+      <div class="speed-presets">
+        <span class="speed-label"><i data-lucide="zap"></i> Rate:</span>
+        <button class="btn-speed active" data-speed="1">1×</button>
+        <button class="btn-speed" data-speed="5">5×</button>
+        <button class="btn-speed" data-speed="15">15×</button>
+        <button class="btn-speed" data-speed="30">30×</button>
+        <button class="btn-speed" data-speed="60">60×</button>
+      </div>
+    </div>
+
+    <!-- Scenarios -->
+    <div class="card scenario-card">
+      <div class="card-header"><i data-lucide="layers"></i> Preset Scenarios</div>
+      <div class="scenario-buttons">
+        <button class="scenario-btn active" data-scenario="normal">
+          <i data-lucide="sun"></i>
+          <div>
+            <strong>Normal Sunlight</strong>
+            <p>Full solar generation. Battery recharging. All systems nominal.</p>
+          </div>
+        </button>
+        <button class="scenario-btn" data-scenario="partial_shadow">
+          <i data-lucide="cloud-sun"></i>
+          <div>
+            <strong>Partial Shadow</strong>
+            <p>Reduced solar output. Battery beginning to discharge. Monitor reserves.</p>
+          </div>
+        </button>
+        <button class="scenario-btn" data-scenario="severe_shadow">
+          <i data-lucide="cloud"></i>
+          <div>
+            <strong>Severe Shadow</strong>
+            <p>Critically low solar generation. Energy shortage approaching. Action required.</p>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Parameter sliders -->
+    <div class="params-grid">
+      <div class="card param-card">
+        <div class="card-header"><i data-lucide="zap"></i> Solar & Environment</div>
+        <div class="param-group">
+          <label>Solar Panel Capacity (kW)
+            <span class="param-val" id="val-solar-cap">20</span>
+          </label>
+          <input type="range" id="sl-solar-cap" min="1" max="50" step="0.5" value="20" />
+        </div>
+        <div class="param-group">
+          <label>Solar Illumination Level
+            <span class="param-val" id="val-illumination">100%</span>
+          </label>
+          <input type="range" id="sl-illumination" min="0" max="1" step="0.01" value="1" />
+        </div>
+        <div class="param-group">
+          <label>Shadow Intensity
+            <span class="param-val" id="val-shadow">0%</span>
+          </label>
+          <input type="range" id="sl-shadow" min="0" max="1" step="0.01" value="0" />
+        </div>
+      </div>
+
+      <div class="card param-card">
+        <div class="card-header"><i data-lucide="battery-charging"></i> Battery & Demand</div>
+        <div class="param-group">
+          <label>Habitat Power Demand (kW)
+            <span class="param-val" id="val-demand">12</span>
+          </label>
+          <input type="range" id="sl-demand" min="1" max="40" step="0.5" value="12" />
+        </div>
+        <div class="param-group">
+          <label>Battery Capacity (kWh)
+            <span class="param-val" id="val-bat-cap">60</span>
+          </label>
+          <input type="range" id="sl-bat-cap" min="5" max="200" step="5" value="60" />
+        </div>
+        <div class="param-group">
+          <label>Initial Battery Charge (kWh)
+            <span class="param-val" id="val-bat-charge">40</span>
+          </label>
+          <input type="range" id="sl-bat-charge" min="0" max="200" step="1" value="40" />
+        </div>
+      </div>
+
+      <div class="card param-card">
+        <div class="card-header"><i data-lucide="timer"></i> Simulation Speed</div>
+        <div class="param-group">
+          <label>Speed Multiplier
+            <span class="param-val" id="val-speed">1×</span>
+          </label>
+          <input type="range" id="sl-speed" min="1" max="60" step="1" value="1" />
+        </div>
+        <div class="sim-info-box">
+          <div class="sim-info-row">
+            <span>Effective Solar Output</span>
+            <strong id="sim-eff-solar">— kW</strong>
+          </div>
+          <div class="sim-info-row">
+            <span>Net Power Balance</span>
+            <strong id="sim-net-power">— kW</strong>
+          </div>
+          <div class="sim-info-row">
+            <span>Simulation Time</span>
+            <strong id="sim-time-box">00:00</strong>
+          </div>
+          <div class="sim-info-row">
+            <span>Alert Level</span>
+            <strong id="sim-alert-level">—</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Forecast chart in simulation -->
+    <div class="card">
+      <div class="card-header"><i data-lucide="bar-chart-2"></i> Predicted Energy Availability (Next 6 Hours)</div>
+      <div class="chart-wrap"><canvas id="chart-forecast-sim"></canvas></div>
+    </div>
+
+  </section>
+
+  <!-- ───────────── SECTION: FORECAST ───────────── -->
+  <section class="page-section" id="section-forecast">
+    <div class="section-header">
+      <h2><i data-lucide="trending-up"></i> Prediction & Forecast</h2>
+      <p class="section-desc">Deterministic energy forecast based on current simulation state. Updated automatically.</p>
+    </div>
+
+    <div class="forecast-summary-card card" id="forecast-summary-card">
+      <div class="forecast-icon"><i data-lucide="cpu"></i></div>
+      <div class="forecast-text" id="forecast-summary-text">Loading forecast…</div>
+    </div>
+
+    <div class="horizon-cards">
+      <div class="horizon-card" id="hcard-1h">
+        <div class="horizon-label">1 Hour</div>
+        <div class="horizon-val" id="h1-bat">— kWh</div>
+        <div class="horizon-pct" id="h1-pct">—%</div>
+        <div class="horizon-status" id="h1-status">—</div>
+      </div>
+      <div class="horizon-card" id="hcard-3h">
+        <div class="horizon-label">3 Hours</div>
+        <div class="horizon-val" id="h3-bat">— kWh</div>
+        <div class="horizon-pct" id="h3-pct">—%</div>
+        <div class="horizon-status" id="h3-status">—</div>
+      </div>
+      <div class="horizon-card" id="hcard-6h">
+        <div class="horizon-label">6 Hours</div>
+        <div class="horizon-val" id="h6-bat">— kWh</div>
+        <div class="horizon-pct" id="h6-pct">—%</div>
+        <div class="horizon-status" id="h6-status">—</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><i data-lucide="line-chart"></i> 6-Hour Battery Forecast</div>
+      <div class="chart-wrap"><canvas id="chart-forecast-main"></canvas></div>
+    </div>
+
+    <div class="forecast-params card">
+      <div class="card-header"><i data-lucide="settings-2"></i> Forecast Assumptions</div>
+      <div class="forecast-params-grid">
+        <div class="fp-item"><span>Solar Output</span><strong id="fp-solar">— kW</strong></div>
+        <div class="fp-item"><span>Habitat Demand</span><strong id="fp-demand">— kW</strong></div>
+        <div class="fp-item"><span>Net Power</span><strong id="fp-net">— kW</strong></div>
+        <div class="fp-item"><span>Current Battery</span><strong id="fp-bat">— kWh (—%)</strong></div>
+      </div>
+      <p class="forecast-disclaimer">
+        <i data-lucide="info"></i>
+        This forecast assumes constant solar generation and habitat demand throughout the prediction window.
+        Actual lunar conditions will vary. This is a simulation prototype, not a real mission control system.
+      </p>
+    </div>
+
+    <!-- Prediction Engine Architecture Explanation -->
+    <div class="card engine-explain-card">
+      <div class="card-header"><i data-lucide="cpu"></i> Prediction Engine Mechanics & Methodology</div>
+      <div class="engine-steps-grid">
+        <div class="engine-step">
+          <div class="engine-step-num">01</div>
+          <div class="engine-step-body">
+            <strong>Solar Power Sampling</strong>
+            <p>Calculates effective irradiance modulated by lunar topography, surface elevation angles, and terrain shadow penalties using non-linear derating factors.</p>
+          </div>
+        </div>
+        <div class="engine-step">
+          <div class="engine-step-num">02</div>
+          <div class="engine-step-body">
+            <strong>Subsystem Demand Summation</strong>
+            <p>Aggregates active power draws across Critical (life support, thermal), Important (navigation, sensors), and Deferrable (experiments) habitat rings.</p>
+          </div>
+        </div>
+        <div class="engine-step">
+          <div class="engine-step-num">03</div>
+          <div class="engine-step-body">
+            <strong>Forward Coulomb Integration</strong>
+            <p>Integrates discrete $\Delta t$ time steps across a 360-minute window accounting for 92% Coulombic charge and 95% discharge round-trip cell efficiency.</p>
+          </div>
+        </div>
+        <div class="engine-step">
+          <div class="engine-step-num">04</div>
+          <div class="engine-step-body">
+            <strong>Reserve Threshold Intersection</strong>
+            <p>Identifies exact predicted minute when storage crosses the mandatory 10% safety reserve and triggers proactive load-shedding guidance.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────── SECTION: SURVIVAL MODE ───────────── -->
+  <section class="page-section" id="section-survival">
+    <div class="section-header">
+      <h2><i data-lucide="shield-alert"></i> Survival Mode</h2>
+      <p class="section-desc">Intelligent energy conservation planner. Identifies loads that can be shed to protect critical habitat systems.</p>
+    </div>
+
+    <div class="survival-status-bar card" id="survival-status-bar">
+      <div class="survival-status-icon"><i data-lucide="shield-check"></i></div>
+      <div id="survival-status-text">Loading energy status…</div>
+    </div>
+
+    <button class="btn btn-accent btn-lg" id="btn-gen-plan">
+      <i data-lucide="cpu"></i> Generate Survival Plan
+    </button>
+
+    <div id="survival-plan-container" class="hidden">
+      <div class="survival-comparison card">
+        <div class="card-header"><i data-lucide="bar-chart-horizontal"></i> Before / After Comparison</div>
+        <div class="comparison-grid">
+          <div class="comparison-col before-col">
+            <div class="comp-label">BEFORE</div>
+            <div class="comp-val" id="comp-demand-before">— kW</div>
+            <div class="comp-sub">Total Demand</div>
+            <div class="comp-val" id="comp-backup-before">— h</div>
+            <div class="comp-sub">Backup Reserve</div>
+          </div>
+          <div class="comparison-arrow"><i data-lucide="arrow-right"></i></div>
+          <div class="comparison-col after-col">
+            <div class="comp-label">AFTER</div>
+            <div class="comp-val" id="comp-demand-after">— kW</div>
+            <div class="comp-sub">Total Demand</div>
+            <div class="comp-val" id="comp-backup-after">— h</div>
+            <div class="comp-sub">Backup Reserve</div>
+          </div>
+        </div>
+        <div class="savings-banner" id="savings-banner">
+          Shedding deferrable loads saves <strong id="savings-kw">— kW</strong>
+        </div>
+      </div>
+
+      <!-- Mission Impact Summary -->
+      <div class="card impact-card" id="impact-summary-card">
+        <div class="card-header"><i data-lucide="award"></i> Mission Impact & Survival Assessment</div>
+        <div class="impact-grid">
+          <div class="impact-metric">
+            <span class="impact-metric-label">Life Support Continuity</span>
+            <strong class="impact-metric-val safe" id="impact-life-support">100% SECURE</strong>
+            <span class="impact-metric-sub">Oxygen & thermal safety unaffected</span>
+          </div>
+          <div class="impact-metric">
+            <span class="impact-metric-label">Reserve Lifeline Extension</span>
+            <strong class="impact-metric-val" id="impact-lifeline">+0.0 HOURS</strong>
+            <span class="impact-metric-sub">Additional survival runway gained</span>
+          </div>
+          <div class="impact-metric">
+            <span class="impact-metric-label">Power Consumption Reduction</span>
+            <strong class="impact-metric-val" id="impact-pct-reduction">0%</strong>
+            <span class="impact-metric-sub">Proportion of discretionary load shed</span>
+          </div>
+          <div class="impact-metric">
+            <span class="impact-metric-label">Predicted Habitat Risk Shift</span>
+            <strong class="impact-metric-val" id="impact-risk-shift">NOMINAL</strong>
+            <span class="impact-metric-sub">Stabilization status after shed</span>
+          </div>
+        </div>
+        <div class="impact-narrative" id="impact-narrative">
+          Plan provides immediate buffer against lunar terrain shadows while guaranteeing primary crew life-support stability.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><i data-lucide="list-checks"></i> Proposed Load Shedding Actions</div>
+        <p class="survival-note">Critical systems are never touched. Only deferrable loads are proposed for reduction.</p>
+        <div id="survival-actions-list"></div>
+        <div class="survival-footer">
+          <button class="btn btn-primary" id="btn-apply-plan">
+            <i data-lucide="check-circle"></i> Apply Selected Actions
+          </button>
+          <div id="survival-apply-result" class="hidden apply-result"></div>
+        </div>
+      </div>
+
+      <div class="card subsystem-priority-card">
+        <div class="card-header"><i data-lucide="layers"></i> System Priority Classification</div>
+        <div class="priority-legend">
+          <div class="pl-item critical"><span class="pl-dot"></span> Critical — Never reduced (life support, thermal, emergency comms)</div>
+          <div class="pl-item important"><span class="pl-dot"></span> Important — Reduced only in extreme emergencies</div>
+          <div class="pl-item deferrable"><span class="pl-dot"></span> Deferrable — Safe to pause to conserve energy</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────── SECTION: ALERTS ───────────── -->
+  <section class="page-section" id="section-alerts">
+    <div class="section-header">
+      <h2><i data-lucide="bell"></i> Alert History</h2>
+      <p class="section-desc">Log of all energy risk transitions during the current simulation session.</p>
+    </div>
+
+    <div class="alert-current card" id="alert-current-card">
+      <div class="alert-current-icon" id="alert-curr-icon"><i data-lucide="check-circle-2"></i></div>
+      <div>
+        <div class="alert-curr-level" id="alert-curr-level">NORMAL</div>
+        <div class="alert-curr-reason" id="alert-curr-reason">No action required. Energy generation and reserves are sufficient.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span><i data-lucide="list"></i> Event Log</span>
+        <button class="btn btn-sm btn-secondary" id="btn-clear-alerts">Clear</button>
+      </div>
+      <div class="alert-table-wrap">
+        <table class="alert-table">
+          <thead>
+            <tr>
+              <th>Sim Time</th>
+              <th>Level</th>
+              <th>Score</th>
+              <th>Event</th>
+              <th>Recommended Response</th>
+            </tr>
+          </thead>
+          <tbody id="alert-table-body">
+            <tr><td colspan="5" class="empty-row">No alerts yet. Start the simulation to begin monitoring.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────── SECTION: ABOUT ───────────── -->
+  <section class="page-section" id="section-about">
+    <div class="section-header">
+      <h2><i data-lucide="info"></i> About ShadowSignal</h2>
+    </div>
+
+    <div class="about-hero card">
+      <div class="about-hero-art">
+        <canvas id="lunar-canvas" width="600" height="200"></canvas>
+      </div>
+      <div class="about-hero-text">
+        <h3>AI-Powered Lunar Habitat Energy Survival Simulator</h3>
+        <p>
+          ShadowSignal is a Space Tech hackathon prototype demonstrating how intelligent energy
+          management could protect future lunar habitats from power shortages caused by terrain
+          shadows, fluctuating solar illumination, and variable energy demand.
+        </p>
+        <p>
+          The application simulates solar generation, battery storage dynamics, habitat energy
+          consumption, shortage prediction, and intelligent load-shedding recommendations — all
+          running locally without any external services.
+        </p>
+        <div class="demo-badge">⚠ Simulation Prototype — All values are demonstration data, not real lunar measurements.</div>
+      </div>
+    </div>
+
+    <div class="about-grid">
+      <div class="card about-card">
+        <div class="card-header"><i data-lucide="layers"></i> Architecture</div>
+        <ul class="about-list">
+          <li><strong>Frontend:</strong> HTML5, CSS3, JavaScript (Chart.js, Lucide Icons)</li>
+          <li><strong>Backend:</strong> Python / Flask REST API</li>
+          <li><strong>Simulation:</strong> Deterministic physics-based engine (NumPy)</li>
+          <li><strong>Prediction:</strong> Forward energy simulation with configurable time steps</li>
+          <li><strong>Communication:</strong> REST API — polling every 800 ms while running</li>
+        </ul>
+      </div>
+
+      <div class="card about-card">
+        <div class="card-header"><i data-lucide="flask-conical"></i> Demo Sequence</div>
+        <ol class="about-list numbered">
+          <li>Open dashboard — habitat running under normal sunlight.</li>
+          <li>Start simulation — observe solar generation and battery charge.</li>
+          <li>Switch to Partial Shadow — watch solar output drop.</li>
+          <li>Switch to Severe Shadow — energy shortage predicted.</li>
+          <li>Generate Survival Plan — review load-shedding recommendations.</li>
+          <li>Accept actions — observe extended battery endurance.</li>
+          <li>Reset — restore original state.</li>
+        </ol>
+      </div>
+
+      <div class="card about-card">
+        <div class="card-header"><i data-lucide="circle-alert"></i> Assumptions & Limitations</div>
+        <ul class="about-list">
+          <li>Solar output model is a simplified power fraction, not a geometric ray-tracing model.</li>
+          <li>Battery modelled as a perfect single-compartment cell with fixed charge/discharge efficiency.</li>
+          <li>Habitat demand is held constant within a scenario — no stochastic load variation.</li>
+          <li>Forecasts assume current conditions persist unchanged throughout the prediction window.</li>
+          <li>No real lunar sensor data is used. This is a demonstration prototype.</li>
+        </ul>
+      </div>
+
+      <div class="card about-card">
+        <div class="card-header"><i data-lucide="terminal"></i> Quick Start (Windows)</div>
+        <pre class="code-block">cd ShadowSignal
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+python app.py
+# Open http://localhost:5000</pre>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Toast notification -->
+<div class="toast" id="toast"></div>
+
+<script>
+
+// ═════════════════════════════════════════════════════════════════
+// IN-BROWSER SIMULATION ENGINE (ALLOWS STANDALONE OPERATION)
+// ═════════════════════════════════════════════════════════════════
+const CLIENT_ENGINE = {
+  constants: {
+    BATTERY_MIN_RESERVE_FRACTION: 0.10,
+    CHARGE_EFFICIENCY: 0.92,
+    DISCHARGE_EFFICIENCY: 0.95,
+    MAX_CHARGE_RATE_FRACTION: 0.25,
+    TIME_STEP_HOURS: 1 / 60
+  },
+  subsystems: [
+    { id: "life_support",    name: "Life Support",          priority: "critical",   base_kw: 4.0 },
+    { id: "thermal",         name: "Thermal Control",        priority: "critical",   base_kw: 2.5 },
+    { id: "emergency_comms", name: "Emergency Comms",        priority: "critical",   base_kw: 0.5 },
+    { id: "navigation",      name: "Navigation & Guidance",  priority: "important",  base_kw: 1.0 },
+    { id: "monitoring",      name: "Habitat Monitoring",     priority: "important",  base_kw: 0.8 },
+    { id: "science_ops",     name: "Essential Science Ops",  priority: "important",  base_kw: 1.2 },
+    { id: "experiments",     name: "Non-essential Experiments", priority: "deferrable", base_kw: 0.8 },
+    { id: "opt_equipment",   name: "Optional Equipment",     priority: "deferrable", base_kw: 0.7 },
+    { id: "computing",       name: "Discretionary Computing", priority: "deferrable", base_kw: 0.5 }
+  ],
+  state: {
+    running: false,
+    sim_time_hours: 0.0,
+    solar_capacity_kw: 20.0,
+    illumination: 1.0,
+    shadow_intensity: 0.0,
+    habitat_demand_kw: 12.0,
+    battery_energy_kwh: 40.0,
+    battery_capacity_kwh: 60.0,
+    sim_speed: 1.0,
+    scenario: "normal",
+    alert_history: [],
+    last_alert_level: "NORMAL",
+    tick_count: 0
+  },
+  init() {
+    this.total_base_kw = this.subsystems.reduce((acc, s) => acc + s.base_kw, 0);
+  },
+  clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); },
+  formatTime(hours) {
+    const h = Math.floor(hours);
+    const m = Math.floor((hours - h) * 60);
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  },
+  effectiveSolar() {
+    const effIllum = this.state.illumination * (1.0 - this.state.shadow_intensity);
+    const factor = Math.pow(Math.max(0, effIllum), 1.1);
+    return this.clamp(this.state.solar_capacity_kw * factor, 0.0, this.state.solar_capacity_kw);
+  },
+  riskScore() {
+    const solar = this.effectiveSolar();
+    const demand = this.state.habitat_demand_kw;
+    const cap = this.state.battery_capacity_kwh;
+    const energy = this.state.battery_energy_kwh;
+    const minReserve = cap * this.constants.BATTERY_MIN_RESERVE_FRACTION;
+    const netPower = solar - demand;
+    const soc = cap > 0 ? energy / cap : 0.0;
+
+    let hoursLeft = 0.0;
+    if (netPower < 0 && energy > minReserve) {
+      const usable = energy - minReserve;
+      hoursLeft = (usable / Math.abs(netPower)) * this.constants.DISCHARGE_EFFICIENCY;
+    } else if (netPower >= 0) {
+      hoursLeft = 99.0;
+    }
+
+    const scoreSoc = this.clamp((1.0 - soc) * 50, 0, 50);
+    const scoreDeficit = netPower < 0 ? this.clamp(((-netPower) / Math.max(demand, 1)) * 30, 0, 30) : 0.0;
+    const scoreTime = netPower < 0 ? this.clamp((1.0 - hoursLeft / 6.0) * 20, 0, 20) : 0.0;
+    return this.clamp(scoreSoc + scoreDeficit + scoreTime, 0, 100);
+  },
+  alertLevel(score) {
+    if (score >= 65) return "CRITICAL";
+    if (score >= 35) return "WARNING";
+    return "NORMAL";
+  },
+  subsystemsSnapshot() {
+    const scale = this.total_base_kw > 0 ? this.state.habitat_demand_kw / this.total_base_kw : 1.0;
+    return this.subsystems.map(s => ({
+      id: s.id,
+      name: s.name,
+      priority: s.priority,
+      kw: Math.round(s.base_kw * scale * 100) / 100
+    }));
+  },
+  getStateDict() {
+    const solar = this.effectiveSolar();
+    const demand = this.state.habitat_demand_kw;
+    const cap = this.state.battery_capacity_kwh;
+    const energy = this.state.battery_energy_kwh;
+    const minReserve = cap * this.constants.BATTERY_MIN_RESERVE_FRACTION;
+    const netPower = solar - demand;
+    const socPct = cap > 0 ? (energy / cap) * 100 : 0;
+
+    let backupHours = 0.0;
+    if (netPower < 0 && energy > minReserve) {
+      const usable = (energy - minReserve) * this.constants.DISCHARGE_EFFICIENCY;
+      backupHours = usable / Math.abs(netPower);
+    } else if (netPower >= 0) {
+      backupHours = 99.0;
+    }
+
+    const score = this.riskScore();
+    const level = this.alertLevel(score);
+    const shortageHours = (netPower < 0 && energy > minReserve) ? backupHours : null;
+    const status = level === "CRITICAL" ? "CRITICAL ALERT" : (level === "WARNING" ? "WARNING" : "NOMINAL");
+
+    return {
+      sim_time: this.formatTime(this.state.sim_time_hours),
+      sim_time_hours: Math.round(this.state.sim_time_hours * 10000) / 10000,
+      running: this.state.running,
+      scenario: this.state.scenario,
+      solar_kw: Math.round(solar * 100) / 100,
+      demand_kw: Math.round(demand * 100) / 100,
+      net_power_kw: Math.round(netPower * 100) / 100,
+      battery_kwh: Math.round(energy * 100) / 100,
+      battery_capacity_kwh: Math.round(cap * 100) / 100,
+      battery_pct: Math.round(socPct * 10) / 10,
+      backup_hours: backupHours < 99 ? Math.round(backupHours * 100) / 100 : 99,
+      shortage_hours: shortageHours !== null ? Math.round(shortageHours * 100) / 100 : null,
+      risk_score: Math.round(score * 10) / 10,
+      alert_level: level,
+      habitat_status: status,
+      illumination: Math.round(this.state.illumination * 1000) / 1000,
+      shadow_intensity: Math.round(this.state.shadow_intensity * 1000) / 1000,
+      solar_capacity_kw: Math.round(this.state.solar_capacity_kw * 100) / 100,
+      battery_min_reserve_kwh: Math.round(minReserve * 100) / 100,
+      sim_speed: Math.round(this.state.sim_speed * 10) / 10,
+      alert_history: this.state.alert_history.slice(-50),
+      subsystems: this.subsystemsSnapshot()
+    };
+  },
+  advance(dtHours) {
+    const solar = this.effectiveSolar();
+    const demand = this.state.habitat_demand_kw;
+    const cap = this.state.battery_capacity_kwh;
+    let energy = this.state.battery_energy_kwh;
+    const maxChargeRate = cap * this.constants.MAX_CHARGE_RATE_FRACTION;
+    const netPower = solar - demand;
+
+    if (netPower >= 0) {
+      const chargePower = Math.min(netPower, maxChargeRate);
+      const deltaEnergy = chargePower * dtHours * this.constants.CHARGE_EFFICIENCY;
+      energy = Math.min(energy + deltaEnergy, cap);
+    } else {
+      const dischargePower = Math.abs(netPower);
+      const deltaEnergy = (dischargePower * dtHours) / this.constants.DISCHARGE_EFFICIENCY;
+      energy = Math.max(energy - deltaEnergy, 0.0);
+    }
+
+    this.state.battery_energy_kwh = Math.round(energy * 10000) / 10000;
+    this.state.sim_time_hours += dtHours;
+
+    const score = this.riskScore();
+    const level = this.alertLevel(score);
+    if (level !== this.state.last_alert_level) {
+      this.state.alert_history.push({
+        sim_time: this.formatTime(this.state.sim_time_hours),
+        level: level,
+        score: Math.round(score * 10) / 10,
+        event: this.alertEventText(level),
+        response: this.alertResponseText(level)
+      });
+      this.state.last_alert_level = level;
+      if (this.state.alert_history.length > 200) {
+        this.state.alert_history = this.state.alert_history.slice(-200);
+      }
+    }
+  },
+  alertEventText(level) {
+    const solar = this.effectiveSolar();
+    const net = solar - this.state.habitat_demand_kw;
+    const soc = (this.state.battery_energy_kwh / this.state.battery_capacity_kwh) * 100;
+    if (level === "CRITICAL") return `Critical energy risk — battery at ${soc.toFixed(0)}%, net power ${net.toFixed(1)} kW (deficit ${Math.abs(net).toFixed(1)} kW).`;
+    if (level === "WARNING") return `Energy reserve declining — battery at ${soc.toFixed(0)}%, net power ${net.toFixed(1)} kW.`;
+    return `Energy levels normal — battery at ${soc.toFixed(0)}%, net power ${net >= 0 ? "+" : ""}${net.toFixed(1)} kW.`;
+  },
+  alertResponseText(level) {
+    if (level === "CRITICAL") return "Activate Survival Mode immediately. Shed deferrable loads.";
+    if (level === "WARNING") return "Review energy plan. Prepare to reduce non-critical loads.";
+    return "No action required. Continue monitoring.";
+  },
+  tick(steps = 1) {
+    if (!this.state.running) return { ok: false, reason: "Simulation is paused." };
+    const dt = this.constants.TIME_STEP_HOURS * this.state.sim_speed;
+    for (let i = 0; i < steps; i++) {
+      this.advance(dt);
+    }
+    this.state.tick_count += steps;
+    const res = this.getStateDict();
+    res.ok = true;
+    return res;
+  },
+  control(action) {
+    if (action === "start") this.state.running = true;
+    else if (action === "pause") this.state.running = false;
+    else if (action === "resume") this.state.running = true;
+    else if (action === "reset") {
+      this.state = {
+        running: false,
+        sim_time_hours: 0.0,
+        solar_capacity_kw: 20.0,
+        illumination: 1.0,
+        shadow_intensity: 0.0,
+        habitat_demand_kw: 12.0,
+        battery_energy_kwh: 40.0,
+        battery_capacity_kwh: 60.0,
+        sim_speed: 1.0,
+        scenario: "normal",
+        alert_history: [],
+        last_alert_level: "NORMAL",
+        tick_count: 0
+      };
+    }
+    return { ok: true, running: this.state.running };
+  },
+  applyScenario(name) {
+    this.state.scenario = name;
+    if (name === "normal") {
+      this.state.illumination = 1.0;
+      this.state.shadow_intensity = 0.0;
+      this.state.solar_capacity_kw = 20.0;
+      this.state.habitat_demand_kw = 12.0;
+      this.state.battery_energy_kwh = 40.0;
+      this.state.battery_capacity_kwh = 60.0;
+    } else if (name === "partial_shadow") {
+      this.state.illumination = 0.65;
+      this.state.shadow_intensity = 0.30;
+      this.state.solar_capacity_kw = 20.0;
+      this.state.habitat_demand_kw = 13.0;
+      this.state.battery_energy_kwh = 35.0;
+      this.state.battery_capacity_kwh = 60.0;
+    } else if (name === "severe_shadow") {
+      this.state.illumination = 0.25;
+      this.state.shadow_intensity = 0.75;
+      this.state.solar_capacity_kw = 20.0;
+      this.state.habitat_demand_kw = 14.0;
+      this.state.battery_energy_kwh = 25.0;
+      this.state.battery_capacity_kwh = 60.0;
+    }
+  },
+  updateSettings(data) {
+    const g = (k, lo, hi, d) => {
+      if (data[k] === undefined || data[k] === null) return this.state[k] !== undefined ? this.state[k] : d;
+      return this.clamp(parseFloat(data[k]) || d, lo, hi);
+    };
+    if (data.scenario) this.applyScenario(data.scenario);
+    if (data.solar_capacity_kw !== undefined) this.state.solar_capacity_kw = g("solar_capacity_kw", 1, 100, 20);
+    if (data.illumination !== undefined) this.state.illumination = g("illumination", 0, 1, 1);
+    if (data.shadow_intensity !== undefined) this.state.shadow_intensity = g("shadow_intensity", 0, 1, 0);
+    if (data.habitat_demand_kw !== undefined) this.state.habitat_demand_kw = g("habitat_demand_kw", 1, 50, 12);
+    if (data.battery_energy_kwh !== undefined) this.state.battery_energy_kwh = g("battery_energy_kwh", 0, 9999, 40);
+    if (data.battery_capacity_kwh !== undefined) this.state.battery_capacity_kwh = g("battery_capacity_kwh", 1, 9999, 60);
+    if (data.sim_speed !== undefined) this.state.sim_speed = g("sim_speed", 0.1, 60, 1);
+    this.state.battery_energy_kwh = Math.min(this.state.battery_energy_kwh, this.state.battery_capacity_kwh);
+    return { ok: true };
+  },
+  forecast() {
+    const solar = this.effectiveSolar();
+    const demand = this.state.habitat_demand_kw;
+    const cap = this.state.battery_capacity_kwh;
+    const energy = this.state.battery_energy_kwh;
+    const minRes = cap * this.constants.BATTERY_MIN_RESERVE_FRACTION;
+    const net = solar - demand;
+
+    const horizons = [1, 3, 6];
+    const points = [];
+    const maxChargeRate = cap * this.constants.MAX_CHARGE_RATE_FRACTION;
+    const dt = 1 / 60;
+    let e = energy;
+    for (let i = 0; i <= 360; i++) {
+      const t = i * dt;
+      const shortage = e <= minRes && net < 0;
+      points.push({ t, battery: e, shortage });
+      if (net >= 0) {
+        const ch = Math.min(net, maxChargeRate);
+        e = Math.min(e + ch * dt * this.constants.CHARGE_EFFICIENCY, cap);
+      } else {
+        const dis = Math.abs(net);
+        e = Math.max(e - (dis * dt) / this.constants.DISCHARGE_EFFICIENCY, 0.0);
+      }
+    }
+
+    const resHorizons = horizons.map(h => {
+      const idx = Math.min(Math.floor(h * 60), points.length - 1);
+      const pt = points[idx];
+      return {
+        hours: h,
+        battery_kwh: Math.round(pt.battery * 100) / 100,
+        battery_pct: cap > 0 ? Math.round((pt.battery / cap) * 1000) / 10 : 0,
+        shortage: pt.shortage
+      };
+    });
+
+    const timeseries = [];
+    for (let i = 0; i < points.length; i += 6) {
+      timeseries.push({
+        t: Math.round(points[i].t * 1000) / 1000,
+        bat: Math.round(points[i].battery * 100) / 100,
+        sol: Math.round(solar * 100) / 100,
+        dem: Math.round(demand * 100) / 100
+      });
+    }
+
+    const shortagePt = points.find(p => p.shortage);
+    let summary = "";
+    if (shortagePt) {
+      summary = `At the current energy deficit of ${Math.abs(net).toFixed(1)} kW, the battery is projected to reach its minimum reserve in approximately ${shortagePt.t.toFixed(1)} h if conditions remain unchanged.`;
+    } else if (net >= 0) {
+      summary = `Solar generation (${solar.toFixed(1)} kW) exceeds habitat demand (${demand.toFixed(1)} kW). The battery is recharging at a net surplus of ${net.toFixed(1)} kW. No shortage predicted.`;
+    } else {
+      summary = "Battery reserves are sufficient for the 6-hour forecast window under current conditions.";
+    }
+
+    return {
+      horizons: resHorizons,
+      timeseries,
+      summary,
+      solar_kw: Math.round(solar * 100) / 100,
+      demand_kw: Math.round(demand * 100) / 100,
+      net_kw: Math.round(net * 100) / 100,
+      battery_kwh: Math.round(energy * 100) / 100,
+      battery_pct: cap > 0 ? Math.round((energy / cap) * 1000) / 10 : 0
+    };
+  },
+  survivalPlan() {
+    const solar = this.effectiveSolar();
+    const demand = this.state.habitat_demand_kw;
+    const cap = this.state.battery_capacity_kwh;
+    const energy = this.state.battery_energy_kwh;
+    const minRes = cap * this.constants.BATTERY_MIN_RESERVE_FRACTION;
+    const net = solar - demand;
+    const scale = this.total_base_kw > 0 ? demand / this.total_base_kw : 1.0;
+
+    let backupBefore = 0.0;
+    if (net < 0 && energy > minRes) {
+      const usable = (energy - minRes) * this.constants.DISCHARGE_EFFICIENCY;
+      backupBefore = usable / Math.abs(net);
+    } else if (net >= 0) {
+      backupBefore = 99.0;
+    }
+
+    const actions = [];
+    let savedKw = 0.0;
+    this.subsystems.forEach(s => {
+      if (s.priority === "deferrable") {
+        const kw = Math.round(s.base_kw * scale * 100) / 100;
+        actions.push({
+          id: s.id,
+          name: s.name,
+          kw: kw,
+          action: "Pause / reduce to zero",
+          saving_kw: kw,
+          accepted: false
+        });
+        savedKw += kw;
+      }
+    });
+
+    const newDemand = demand - savedKw;
+    const newNet = solar - newDemand;
+    let backupAfter = 0.0;
+    if (newNet < 0 && energy > minRes) {
+      const usableAfter = (energy - minRes) * this.constants.DISCHARGE_EFFICIENCY;
+      backupAfter = usableAfter / Math.abs(newNet);
+    } else if (newNet >= 0) {
+      backupAfter = 99.0;
+    }
+
+    const shortageExists = net < 0;
+    const narrative = !shortageExists
+      ? "No energy shortage is currently predicted. Generating a precautionary plan for future reference."
+      : `Energy deficit of ${Math.abs(net).toFixed(1)} kW detected. Shedding all deferrable loads saves ${savedKw.toFixed(1)} kW, extending battery endurance from ${backupBefore.toFixed(1)} h to ${Math.min(backupAfter, 99).toFixed(1)} h.`;
+
+    return {
+      shortage_exists: shortageExists,
+      deficit_kw: Math.round(Math.max(-net, 0) * 100) / 100,
+      saved_kw: Math.round(savedKw * 100) / 100,
+      demand_before_kw: Math.round(demand * 100) / 100,
+      demand_after_kw: Math.round(newDemand * 100) / 100,
+      backup_before_h: Math.round(Math.min(backupBefore, 99) * 100) / 100,
+      backup_after_h: Math.round(Math.min(backupAfter, 99) * 100) / 100,
+      actions,
+      narrative
+    };
+  }
+};
+CLIENT_ENGINE.init();
+
+
+/* ═══════════════════════════════════════════════════════════
+   ShadowSignal — Frontend Application
+   Handles: API polling, chart management, simulation controls,
+            forecast display, survival mode, alert log, navigation.
+   ═══════════════════════════════════════════════════════════ */
+
+"use strict";
+
+// ─────────────────────────────────────────────────────────────
+// State & constants
+// ─────────────────────────────────────────────────────────────
+const MAX_HISTORY = 120;   // chart data points to keep
+const POLL_MS     = 250;   // polling interval when running (4 updates per second)
+const TICK_STEPS  = 1;     // ticks per poll cycle
+
+let pollTimer   = null;
+let isRunning   = false;
+let lastAlertLevel = "NORMAL";
+
+// Rolling history for live charts
+const history = {
+  times:    [],
+  solar:    [],
+  demand:   [],
+  battery:  [],
+};
+
+// Current survival plan data from backend
+let currentPlan = null;
+
+// ─────────────────────────────────────────────────────────────
+// Chart instances
+// ─────────────────────────────────────────────────────────────
+let chartGenDemand   = null;
+let chartBattery     = null;
+let chartSubsystems  = null;
+let chartForecastSim = null;
+let chartForecastMain= null;
+
+// ─────────────────────────────────────────────────────────────
+// Utility helpers
+// ─────────────────────────────────────────────────────────────
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+function fmtKW(v)  { return typeof v === "number" ? v.toFixed(2) : "—"; }
+function fmtKWh(v) { return typeof v === "number" ? v.toFixed(1) : "—"; }
+function fmtH(v)   {
+  if (typeof v !== "number") return "—";
+  if (v >= 99) return "∞";
+  return v.toFixed(1);
+}
+function fmtPct(v) { return typeof v === "number" ? v.toFixed(1) + "%" : "—"; }
+
+function pct(val, total) { return total > 0 ? clamp((val / total) * 100, 0, 100) : 0; }
+
+function el(id) { return document.getElementById(id); }
+function setText(id, txt) { const e = el(id); if (e) e.textContent = txt; }
+function setWidth(id, pctVal) {
+  const e = el(id);
+  if (e) e.style.width = clamp(pctVal, 0, 100) + "%";
+}
+
+let toastTimer = null;
+function showToast(msg, type = "info") {
+  const t = el("toast");
+  t.textContent = msg;
+  t.className = "toast show " + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = "toast"; }, 3000);
+}
+
+// Hybrid API bridge: seamless offline standalone support
+let USE_STANDALONE_ENGINE = (window.location.protocol === "file:" || window.location.hostname === "");
+
+async function apiPost(url, body) {
+  if (USE_STANDALONE_ENGINE) {
+    if (url.includes("/api/tick")) return CLIENT_ENGINE.tick(body.steps || 1);
+    if (url.includes("/api/control")) return CLIENT_ENGINE.control(body.action);
+    if (url.includes("/api/settings")) return CLIENT_ENGINE.updateSettings(body);
+  }
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    return await res.json();
+  } catch (err) {
+    USE_STANDALONE_ENGINE = true;
+    if (url.includes("/api/tick")) return CLIENT_ENGINE.tick(body.steps || 1);
+    if (url.includes("/api/control")) return CLIENT_ENGINE.control(body.action);
+    if (url.includes("/api/settings")) return CLIENT_ENGINE.updateSettings(body);
+    throw err;
+  }
+}
+
+async function apiGet(url) {
+  if (USE_STANDALONE_ENGINE) {
+    if (url.includes("/api/state")) return CLIENT_ENGINE.getStateDict();
+    if (url.includes("/api/forecast")) return CLIENT_ENGINE.forecast();
+    if (url.includes("/api/survival_plan")) return CLIENT_ENGINE.survivalPlan();
+  }
+  try {
+    const res = await fetch(url);
+    return await res.json();
+  } catch (err) {
+    USE_STANDALONE_ENGINE = true;
+    if (url.includes("/api/state")) return CLIENT_ENGINE.getStateDict();
+    if (url.includes("/api/forecast")) return CLIENT_ENGINE.forecast();
+    if (url.includes("/api/survival_plan")) return CLIENT_ENGINE.survivalPlan();
+    throw err;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Chart helpers
+// ─────────────────────────────────────────────────────────────
+const CHART_DEFAULTS = {
+  responsive:          true,
+  maintainAspectRatio: false,
+  animation:           { duration: 300 },
+  plugins: {
+    legend: {
+      labels: {
+        color:     "#6b7899",
+        font:      { size: 11 },
+        boxWidth:  12,
+        padding:   12,
+      },
+    },
+    tooltip: {
+      backgroundColor: "#10141f",
+      borderColor:     "#1e2535",
+      borderWidth:     1,
+      titleColor:      "#e8eaf0",
+      bodyColor:       "#6b7899",
+    },
+  },
+  scales: {
+    x: {
+      ticks:    { color: "#3d4a66", font: { size: 10 }, maxTicksLimit: 8 },
+      grid:     { color: "#1e2535" },
+    },
+    y: {
+      ticks:    { color: "#3d4a66", font: { size: 10 } },
+      grid:     { color: "#1e2535" },
+    },
+  },
+};
+
+function mergeDeep(target, source) {
+  const out = Object.assign({}, target);
+  for (const key of Object.keys(source)) {
+    if (source[key] && typeof source[key] === "object" && !Array.isArray(source[key])) {
+      out[key] = mergeDeep(target[key] || {}, source[key]);
+    } else {
+      out[key] = source[key];
+    }
+  }
+  return out;
+}
+
+function makeChartOptions(overrides = {}) {
+  return mergeDeep(CHART_DEFAULTS, overrides);
+}
+
+// ─────────────────────────────────────────────────────────────
+// Chart initialization
+// ─────────────────────────────────────────────────────────────
+function initCharts() {
+  // Gen vs Demand
+  chartGenDemand = new Chart(el("chart-gen-demand"), {
+    type: "line",
+    data: {
+      labels:   [],
+      datasets: [
+        {
+          label:       "Solar Generation (kW)",
+          data:        [],
+          borderColor: "#fbbf24",
+          backgroundColor: "rgba(251,191,36,0.08)",
+          tension:     0.3,
+          fill:        true,
+          pointRadius: 0,
+        },
+        {
+          label:       "Energy Demand (kW)",
+          data:        [],
+          borderColor: "#f87171",
+          backgroundColor: "rgba(248,113,113,0.06)",
+          tension:     0.3,
+          fill:        true,
+          pointRadius: 0,
+        },
+      ],
+    },
+    options: makeChartOptions({
+      scales: {
+        y: { title: { display: true, text: "Power (kW)", color: "#3d4a66", font: { size: 10 } } },
+        x: { title: { display: true, text: "Sim Time (h)", color: "#3d4a66", font: { size: 10 } } },
+      },
+    }),
+  });
+
+  // Battery SOC
+  chartBattery = new Chart(el("chart-battery"), {
+    type: "line",
+    data: {
+      labels:   [],
+      datasets: [{
+        label:       "Battery (kWh)",
+        data:        [],
+        borderColor: "#34d399",
+        backgroundColor: "rgba(52,211,153,0.10)",
+        tension:     0.3,
+        fill:        true,
+        pointRadius: 0,
+      }],
+    },
+    options: makeChartOptions({
+      scales: {
+        y: { title: { display: true, text: "Energy (kWh)", color: "#3d4a66", font: { size: 10 } }, min: 0 },
+      },
+    }),
+  });
+
+  // Subsystem donut
+  chartSubsystems = new Chart(el("chart-subsystems"), {
+    type: "doughnut",
+    data: {
+      labels:   [],
+      datasets: [{
+        data:            [],
+        backgroundColor: [
+          "#f87171","#fb923c","#fbbf24",
+          "#34d399","#38bdf8","#818cf8",
+          "#c084fc","#f472b6","#94a3b8",
+        ],
+        borderColor:  "#10141f",
+        borderWidth:  2,
+      }],
+    },
+    options: {
+      responsive:          true,
+      maintainAspectRatio: false,
+      animation:           { duration: 300 },
+      plugins: {
+        legend: {
+          position: "right",
+          labels:   { color: "#6b7899", font: { size: 10 }, boxWidth: 10, padding: 8 },
+        },
+        tooltip: {
+          backgroundColor: "#10141f",
+          borderColor:     "#1e2535",
+          borderWidth:     1,
+          titleColor:      "#e8eaf0",
+          bodyColor:       "#6b7899",
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${ctx.parsed.toFixed(2)} kW`,
+          },
+        },
+      },
+      cutout: "65%",
+    },
+  });
+
+  // Forecast chart (simulation page)
+  chartForecastSim = new Chart(el("chart-forecast-sim"), {
+    type: "line",
+    data: {
+      labels:   [],
+      datasets: [{
+        label:       "Predicted Battery (kWh)",
+        data:        [],
+        borderColor: "#38bdf8",
+        backgroundColor: "rgba(56,189,248,0.08)",
+        tension:     0.3,
+        fill:        true,
+        pointRadius: 0,
+      }],
+    },
+    options: makeChartOptions({
+      scales: {
+        y: { title: { display: true, text: "Energy (kWh)", color: "#3d4a66", font: { size: 10 } }, min: 0 },
+        x: { title: { display: true, text: "Hours ahead", color: "#3d4a66", font: { size: 10 } } },
+      },
+    }),
+  });
+
+  // Forecast chart (forecast page)
+  chartForecastMain = new Chart(el("chart-forecast-main"), {
+    type: "line",
+    data: {
+      labels:   [],
+      datasets: [
+        {
+          label:       "Predicted Battery (kWh)",
+          data:        [],
+          borderColor: "#38bdf8",
+          backgroundColor: "rgba(56,189,248,0.08)",
+          tension:     0.3,
+          fill:        true,
+          pointRadius: 0,
+        },
+        {
+          label:       "Min Reserve",
+          data:        [],
+          borderColor: "#f87171",
+          borderDash:  [4, 3],
+          tension:     0,
+          fill:        false,
+          pointRadius: 0,
+        },
+      ],
+    },
+    options: makeChartOptions({
+      scales: {
+        y: { title: { display: true, text: "Energy (kWh)", color: "#3d4a66", font: { size: 10 } }, min: 0 },
+        x: { title: { display: true, text: "Hours ahead", color: "#3d4a66", font: { size: 10 } } },
+      },
+    }),
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// Chart update helpers
+// ─────────────────────────────────────────────────────────────
+function pushHistory(state) {
+  const t = state.sim_time_hours.toFixed(2);
+  history.times.push(t);
+  history.solar.push(state.solar_kw);
+  history.demand.push(state.demand_kw);
+  history.battery.push(state.battery_kwh);
+
+  if (history.times.length > MAX_HISTORY) {
+    history.times.shift();
+    history.solar.shift();
+    history.demand.shift();
+    history.battery.shift();
+  }
+}
+
+function updateLiveCharts() {
+  // Gen vs Demand
+  chartGenDemand.data.labels             = history.times;
+  chartGenDemand.data.datasets[0].data   = history.solar;
+  chartGenDemand.data.datasets[1].data   = history.demand;
+  chartGenDemand.update("none");
+
+  // Battery
+  chartBattery.data.labels             = history.times;
+  chartBattery.data.datasets[0].data   = history.battery;
+  chartBattery.update("none");
+}
+
+function updateSubsystemChart(subsystems) {
+  chartSubsystems.data.labels             = subsystems.map(s => s.name);
+  chartSubsystems.data.datasets[0].data   = subsystems.map(s => s.kw);
+  chartSubsystems.update();
+}
+
+function updateForecastCharts(data) {
+  const labels = data.timeseries.map(p => p.t.toFixed(2));
+  const batVals = data.timeseries.map(p => p.bat);
+  const minRes  = data.timeseries.map(() =>
+    parseFloat((data.battery_kwh * 0.10 / (data.battery_kwh / (data.battery_kwh || 1))).toFixed(2))
+  );
+  // Actually compute min reserve properly from capacity
+  // We approximate from battery_pct and battery_kwh
+  // min_reserve = capacity * 0.10; capacity = battery_kwh / (battery_pct/100)
+  const cap = data.battery_kwh > 0 && data.battery_pct > 0
+    ? data.battery_kwh / (data.battery_pct / 100)
+    : 60;
+  const minResConst = cap * 0.10;
+  const minResSeries = labels.map(() => minResConst);
+
+  [chartForecastSim, chartForecastMain].forEach(ch => {
+    if (!ch) return;
+    ch.data.labels           = labels;
+    ch.data.datasets[0].data = batVals;
+    if (ch.data.datasets[1]) {
+      ch.data.datasets[1].data = minResSeries;
+    }
+    ch.update();
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// Dashboard metric card updates
+// ─────────────────────────────────────────────────────────────
+function updateDashboard(state) {
+  // Topbar
+  setText("top-sim-time", state.sim_time);
+  el("top-risk-badge").textContent = state.alert_level;
+  el("top-risk-badge").className   = "risk-badge " + state.alert_level;
+
+  const simInd = el("top-sim-running");
+  simInd.className = "sim-indicator" + (state.running ? " running" : "");
+  setText("top-sim-label", state.running ? "RUNNING" : "PAUSED");
+
+  // Sidebar status
+  const dot = el("sb-status-dot");
+  dot.className = "status-dot " + state.alert_level.toLowerCase();
+  setText("sb-status-text", state.alert_level);
+
+  // Metric cards
+  setText("m-solar",   fmtKW(state.solar_kw));
+  setWidth("bar-solar", pct(state.solar_kw, state.solar_capacity_kw));
+
+  setText("m-demand",  fmtKW(state.demand_kw));
+  setWidth("bar-demand", pct(state.demand_kw, state.solar_capacity_kw));
+
+  setText("m-battery", fmtKWh(state.battery_kwh));
+  setText("m-battery-pct", `kWh / ${fmtPct(state.battery_pct)}`);
+  setWidth("bar-battery", state.battery_pct);
+
+  // Color battery bar
+  const batBar = el("bar-battery");
+  if (batBar) {
+    batBar.style.background =
+      state.battery_pct < 20 ? "#f87171" :
+      state.battery_pct < 40 ? "#fbbf24" : "#34d399";
+  }
+
+  setText("m-backup", fmtH(state.backup_hours));
+
+  if (state.shortage_hours !== null && state.shortage_hours !== undefined) {
+    setText("m-shortage", fmtH(state.shortage_hours));
+    setText("m-shortage-sub", "hours until shortage");
+    el("card-shortage").style.borderColor = "rgba(248,113,113,0.4)";
+  } else {
+    setText("m-shortage", "None");
+    setText("m-shortage-sub", "no shortage predicted");
+    el("card-shortage").style.borderColor = "";
+  }
+
+  setText("m-risk", state.risk_score.toFixed(0));
+  setWidth("bar-risk", state.risk_score);
+  const riskBar = el("bar-risk");
+  if (riskBar) {
+    riskBar.style.background =
+      state.risk_score >= 65 ? "#f87171" :
+      state.risk_score >= 35 ? "#fbbf24" : "#34d399";
+  }
+
+  // Energy flow
+  setText("flow-solar",   fmtKW(state.solar_kw) + " kW");
+  setText("flow-battery", fmtKWh(state.battery_kwh) + " kWh");
+  setText("flow-habitat", fmtKW(state.demand_kw) + " kW");
+  setText("flow-arr1-val", fmtKW(Math.min(state.solar_kw, state.demand_kw)) + " kW");
+  setText("flow-arr2-val", fmtKW(state.demand_kw) + " kW");
+
+  // Simulation page info boxes
+  setText("sim-eff-solar",   fmtKW(state.solar_kw) + " kW");
+  const netEl = el("sim-net-power");
+  if (netEl) {
+    const net = state.net_power_kw;
+    netEl.textContent = (net >= 0 ? "+" : "") + fmtKW(net) + " kW";
+    netEl.style.color = net >= 0 ? "#34d399" : "#f87171";
+  }
+  setText("sim-time-box",    state.sim_time);
+  const alertLvlEl = el("sim-alert-level");
+  if (alertLvlEl) {
+    alertLvlEl.textContent = state.alert_level;
+    alertLvlEl.style.color =
+      state.alert_level === "CRITICAL" ? "#f87171" :
+      state.alert_level === "WARNING"  ? "#fbbf24" : "#34d399";
+  }
+
+  // Alert current card
+  updateAlertCurrent(state);
+
+  // Subsystem chart
+  if (state.subsystems) updateSubsystemChart(state.subsystems);
+}
+
+function updateAlertCurrent(state) {
+  const card  = el("alert-current-card");
+  const icon  = el("alert-curr-icon");
+  const level = el("alert-curr-level");
+  const reason= el("alert-curr-reason");
+  if (!card) return;
+
+  card.className  = "alert-current card " + state.alert_level;
+  level.textContent = state.alert_level;
+
+  const iconName =
+    state.alert_level === "CRITICAL" ? "octagon-alert" :
+    state.alert_level === "WARNING"  ? "triangle-alert" : "check-circle-2";
+
+  icon.innerHTML = `<i data-lucide="${iconName}"></i>`;
+
+  const reasons = {
+    NORMAL:   "Energy generation and reserves are sufficient. No action required.",
+    WARNING:  `Battery discharging — net power ${(state.net_power_kw).toFixed(1)} kW. Monitor reserves.`,
+    CRITICAL: `Critical energy risk — battery at ${state.battery_pct.toFixed(0)}%. Shortage imminent. Activate Survival Mode.`,
+  };
+  reason.textContent = reasons[state.alert_level] || "";
+
+  if (window.lucide && window.lucide.createIcons) {
+    window.lucide.createIcons();
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Alert history table
+// ─────────────────────────────────────────────────────────────
+let renderedAlertCount = 0;
+
+function updateAlertTable(history_arr) {
+  const tbody = el("alert-table-body");
+  if (!tbody) return;
+  if (history_arr.length === renderedAlertCount) return;
+
+  // Re-render fully (history is small)
+  tbody.innerHTML = "";
+  if (history_arr.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="empty-row">No alerts yet. Start the simulation to begin monitoring.</td></tr>`;
+    renderedAlertCount = 0;
+    return;
+  }
+
+  // Show most recent first
+  const rows = [...history_arr].reverse();
+  rows.forEach(a => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td style="font-family:monospace;color:#67e8f9">${a.sim_time}</td>
+      <td><span class="level-badge ${a.level}">${a.level}</span></td>
+      <td style="font-variant-numeric:tabular-nums">${a.score}</td>
+      <td>${a.event}</td>
+      <td style="color:#6b7899">${a.response}</td>`;
+    tbody.appendChild(tr);
+  });
+  renderedAlertCount = history_arr.length;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Polling loop
+// ─────────────────────────────────────────────────────────────
+let tickCounter = 0;
+
+async function tick() {
+  if (!isRunning) return;
+  try {
+    const state = await apiPost("/api/tick", { steps: TICK_STEPS });
+    if (!state || !state.ok) {
+      if (state && state.reason) showToast(state.reason, "error");
+      stopPolling();
+      return;
+    }
+    pushHistory(state);
+    updateDashboard(state);
+    updateLiveCharts();
+    updateAlertTable(state.alert_history || []);
+    updateSurvivalStatusBar(state);
+    isRunning = state.running;
+    if (!isRunning) stopPolling();
+
+    // Refresh forecast every 4 ticks to keep UI blazing fast
+    tickCounter++;
+    if (tickCounter % 4 === 0) {
+      refreshForecast();
+    }
+  } catch(e) {
+    console.warn("Tick error:", e);
+  }
+}
+
+async function refreshState() {
+  try {
+    const state = await apiGet("/api/state");
+    pushHistory(state);
+    updateDashboard(state);
+    updateLiveCharts();
+    updateAlertTable(state.alert_history || []);
+    updateSurvivalStatusBar(state);
+    isRunning = state.running;
+    if (!isRunning) stopPolling();
+  } catch(e) {
+    console.warn("State refresh error:", e);
+  }
+}
+
+async function refreshForecast() {
+  try {
+    const data = await apiGet("/api/forecast");
+    updateForecastDisplay(data);
+    updateForecastCharts(data);
+  } catch(e) {
+    console.warn("Forecast refresh error:", e);
+  }
+}
+
+function startPolling() {
+  if (pollTimer) return;
+  pollTimer = setInterval(tick, POLL_MS);
+}
+
+function stopPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Simulation controls
+// ─────────────────────────────────────────────────────────────
+async function handleControl(action) {
+  try {
+    const res = await apiPost("/api/control", { action });
+    if (!res.ok) { showToast(res.reason || "Control failed", "error"); return; }
+
+    if (action === "start" || action === "resume") {
+      isRunning = true;
+      startPolling();
+      showToast("Simulation running", "success");
+    } else if (action === "pause") {
+      isRunning = false;
+      stopPolling();
+      showToast("Simulation paused");
+    } else if (action === "reset") {
+      isRunning = false;
+      stopPolling();
+      history.times.length = 0;
+      history.solar.length = 0;
+      history.demand.length = 0;
+      history.battery.length = 0;
+      renderedAlertCount = 0;
+      currentPlan = null;
+      el("survival-plan-container") && el("survival-plan-container").classList.add("hidden");
+      updateLiveCharts();
+      await refreshState();
+      await refreshForecast();
+      syncSlidersFromServer();
+      showToast("Simulation reset", "success");
+    }
+  } catch(e) {
+    showToast("API error: " + e.message, "error");
+  }
+}
+
+el("btn-start") .addEventListener("click", () => handleControl("start"));
+el("btn-pause") .addEventListener("click", () => handleControl("pause"));
+el("btn-resume").addEventListener("click", () => handleControl("resume"));
+el("btn-reset") .addEventListener("click", () => handleControl("reset"));
+
+// Speed rate preset buttons
+document.querySelectorAll(".btn-speed").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    const spd = parseFloat(btn.dataset.speed);
+    document.querySelectorAll(".btn-speed").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+
+    const slSpeed = el("sl-speed");
+    if (slSpeed) {
+      slSpeed.value = spd;
+      setText("val-speed", spd + "×");
+    }
+
+    try {
+      await apiPost("/api/settings", { sim_speed: spd });
+      showToast(`Simulation rate: ${spd}×`, "success");
+    } catch(e) {
+      console.warn("Speed update error", e);
+    }
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+// Scenario buttons
+// ─────────────────────────────────────────────────────────────
+document.querySelectorAll(".scenario-btn").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    const scenario = btn.dataset.scenario;
+    document.querySelectorAll(".scenario-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    try {
+      await apiPost("/api/settings", { scenario });
+      // Reset chart history for clean view
+      history.times.length = 0;
+      history.solar.length = 0;
+      history.demand.length = 0;
+      history.battery.length = 0;
+      await refreshState();
+      await refreshForecast();
+      await syncSlidersFromServer();
+      showToast("Scenario applied: " + btn.querySelector("strong").textContent, "success");
+    } catch(e) {
+      showToast("Failed to apply scenario", "error");
+    }
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+// Parameter sliders
+// ─────────────────────────────────────────────────────────────
+function setupSliders() {
+  const sliders = [
+    { id: "sl-solar-cap",  key: "solar_capacity_kw",   valId: "val-solar-cap",   fmt: v => v + " kW" },
+    { id: "sl-illumination",key:"illumination",         valId: "val-illumination",fmt: v => Math.round(v*100) + "%" },
+    { id: "sl-shadow",     key: "shadow_intensity",    valId: "val-shadow",      fmt: v => Math.round(v*100) + "%" },
+    { id: "sl-demand",     key: "habitat_demand_kw",   valId: "val-demand",      fmt: v => v + " kW" },
+    { id: "sl-bat-cap",    key: "battery_capacity_kwh",valId: "val-bat-cap",     fmt: v => v + " kWh" },
+    { id: "sl-bat-charge", key: "battery_energy_kwh",  valId: "val-bat-charge",  fmt: v => v + " kWh" },
+    { id: "sl-speed",      key: "sim_speed",           valId: "val-speed",       fmt: v => v + "×" },
+  ];
+
+  let debounceTimer = null;
+
+  sliders.forEach(({ id, key, valId, fmt }) => {
+    const sl  = el(id);
+    const val = el(valId);
+    if (!sl || !val) return;
+
+    sl.addEventListener("input", () => {
+      val.textContent = fmt(parseFloat(sl.value));
+    });
+
+    sl.addEventListener("change", () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(async () => {
+        const body = {};
+        sliders.forEach(s => {
+          const sEl = el(s.id);
+          if (sEl) body[s.key] = parseFloat(sEl.value);
+        });
+        try {
+          await apiPost("/api/settings", body);
+          await refreshState();
+          await refreshForecast();
+        } catch(e) {
+          showToast("Settings update failed", "error");
+        }
+      }, 200);
+    });
+  });
+}
+
+async function syncSlidersFromServer() {
+  try {
+    const state = await apiGet("/api/state");
+    const map = {
+      "sl-solar-cap":   state.solar_capacity_kw,
+      "sl-illumination":state.illumination,
+      "sl-shadow":      state.shadow_intensity,
+      "sl-demand":      state.demand_kw,
+      "sl-bat-cap":     state.battery_capacity_kwh,
+      "sl-bat-charge":  state.battery_kwh,
+      "sl-speed":       state.sim_speed || 1,
+    };
+    const fmts = {
+      "sl-solar-cap":   v => v + " kW",
+      "sl-illumination":v => Math.round(v*100) + "%",
+      "sl-shadow":      v => Math.round(v*100) + "%",
+      "sl-demand":      v => v + " kW",
+      "sl-bat-cap":     v => v + " kWh",
+      "sl-bat-charge":  v => v + " kWh",
+      "sl-speed":       v => v + "×",
+    };
+    const valIds = {
+      "sl-solar-cap":   "val-solar-cap",
+      "sl-illumination":"val-illumination",
+      "sl-shadow":      "val-shadow",
+      "sl-demand":      "val-demand",
+      "sl-bat-cap":     "val-bat-cap",
+      "sl-bat-charge":  "val-bat-charge",
+      "sl-speed":       "val-speed",
+    };
+    Object.entries(map).forEach(([slId, val]) => {
+      const sl = el(slId);
+      if (sl) {
+        sl.value = val;
+        const valEl = el(valIds[slId]);
+        if (valEl) valEl.textContent = fmts[slId](val);
+      }
+    });
+
+    // Update active speed preset button
+    const curSpeed = Math.round(state.sim_speed || 1);
+    document.querySelectorAll(".btn-speed").forEach(b => {
+      if (parseInt(b.dataset.speed, 10) === curSpeed) {
+        b.classList.add("active");
+      } else {
+        b.classList.remove("active");
+      }
+    });
+  } catch(e) { console.warn("Slider sync failed", e); }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Forecast section
+// ─────────────────────────────────────────────────────────────
+function updateForecastDisplay(data) {
+  setText("forecast-summary-text", data.summary || "—");
+  setText("fp-solar",  fmtKW(data.solar_kw) + " kW");
+  setText("fp-demand", fmtKW(data.demand_kw) + " kW");
+  const netEl = el("fp-net");
+  if (netEl) {
+    const net = data.net_kw;
+    netEl.textContent = (net >= 0 ? "+" : "") + fmtKW(net) + " kW";
+    netEl.style.color = net >= 0 ? "#34d399" : "#f87171";
+  }
+  setText("fp-bat", `${fmtKWh(data.battery_kwh)} kWh (${fmtPct(data.battery_pct)})`);
+
+  const horizonMap = { 0: "1h", 1: "3h", 2: "6h" };
+  const idMap = { "1h": ["h1-bat","h1-pct","h1-status","hcard-1h"], "3h": ["h3-bat","h3-pct","h3-status","hcard-3h"], "6h": ["h6-bat","h6-pct","h6-status","hcard-6h"] };
+
+  (data.horizons || []).forEach((h, i) => {
+    const key = horizonMap[i];
+    if (!key) return;
+    const [batId, pctId, statusId, cardId] = idMap[key];
+    setText(batId, fmtKWh(h.battery_kwh) + " kWh");
+    setText(pctId, fmtPct(h.battery_pct));
+    const statusEl = el(statusId);
+    if (statusEl) {
+      if (h.shortage) {
+        statusEl.textContent = "SHORTAGE";
+        statusEl.className = "horizon-status shortage";
+      } else {
+        statusEl.textContent = "OK";
+        statusEl.className = "horizon-status ok";
+      }
+    }
+    // Color horizon card
+    const card = el(cardId);
+    if (card) {
+      card.style.borderColor = h.shortage
+        ? "rgba(248,113,113,0.4)"
+        : h.battery_pct < 30 ? "rgba(251,191,36,0.3)" : "";
+    }
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// Survival Mode
+// ─────────────────────────────────────────────────────────────
+function updateSurvivalStatusBar(state) {
+  const bar = el("survival-status-bar");
+  if (!bar) return;
+  bar.className = "survival-status-bar card " + state.alert_level;
+
+  const iconName =
+    state.alert_level === "CRITICAL" ? "octagon-alert" :
+    state.alert_level === "WARNING"  ? "triangle-alert" : "shield-check";
+
+  bar.querySelector(".survival-status-icon").innerHTML = `<i data-lucide="${iconName}"></i>`;
+
+  const msgs = {
+    NORMAL:   `Energy status nominal. Solar ${fmtKW(state.solar_kw)} kW, demand ${fmtKW(state.demand_kw)} kW. Battery at ${fmtPct(state.battery_pct)}.`,
+    WARNING:  `Energy deficit detected (${fmtKW(state.net_power_kw)} kW net). Battery discharging. Consider generating a survival plan.`,
+    CRITICAL: `Critical shortage imminent! Battery at ${fmtPct(state.battery_pct)}, reserve ${fmtH(state.backup_hours)} h. Generate a Survival Plan immediately.`,
+  };
+  el("survival-status-text").textContent = msgs[state.alert_level] || "";
+  if (window.lucide && window.lucide.createIcons) {
+    window.lucide.createIcons();
+  }
+}
+
+el("btn-gen-plan").addEventListener("click", async () => {
+  try {
+    const plan = await apiGet("/api/survival_plan");
+    currentPlan = plan;
+    renderSurvivalPlan(plan);
+    showToast("Survival plan generated", "success");
+  } catch(e) {
+    showToast("Failed to generate plan: " + e.message, "error");
+  }
+});
+
+function renderSurvivalPlan(plan) {
+  const container = el("survival-plan-container");
+  container.classList.remove("hidden");
+
+  // Comparison
+  setText("comp-demand-before", fmtKW(plan.demand_before_kw) + " kW");
+  setText("comp-demand-after",  fmtKW(plan.demand_after_kw)  + " kW");
+  setText("comp-backup-before", fmtH(plan.backup_before_h) + " h");
+  setText("comp-backup-after",  fmtH(plan.backup_after_h)  + " h");
+  setText("savings-kw", fmtKW(plan.saved_kw) + " kW");
+
+  // Actions list
+  const list = el("survival-actions-list");
+  list.innerHTML = "";
+  plan.actions.forEach((action, idx) => {
+    const item = document.createElement("div");
+    item.className = "survival-action-item";
+    item.innerHTML = `
+      <input type="checkbox" class="action-checkbox" id="act-${idx}" data-idx="${idx}" checked />
+      <div class="metric-body">
+        <div class="action-name">${action.name}</div>
+        <div class="action-detail">${action.action}</div>
+      </div>
+      <div class="action-saving">–${fmtKW(action.saving_kw)} kW</div>`;
+    list.appendChild(item);
+  });
+
+  // Attach live change listener to checkboxes for interactive impact re-calc
+  document.querySelectorAll(".action-checkbox").forEach(chk => {
+    chk.addEventListener("change", () => {
+      recalcSurvivalImpact();
+    });
+  });
+
+  updateImpactMetrics(plan.demand_before_kw, plan.demand_after_kw, plan.backup_before_h, plan.backup_after_h, plan.saved_kw);
+
+  // Hide previous apply result
+  const applyRes = el("survival-apply-result");
+  applyRes.classList.add("hidden");
+  applyRes.textContent = "";
+
+  // Narrative update
+  el("survival-status-text").textContent = plan.narrative;
+  if (window.lucide && window.lucide.createIcons) {
+    window.lucide.createIcons();
+  }
+}
+
+function updateImpactMetrics(demandBefore, demandAfter, backupBefore, backupAfter, savedKw) {
+  const extensionHours = Math.max(0, backupAfter - (backupBefore >= 99 ? 0 : backupBefore));
+  const pctCut = demandBefore > 0 ? ((savedKw / demandBefore) * 100).toFixed(1) : "0";
+
+  setText("impact-lifeline", backupAfter >= 99 ? "+UNLIMITED (SURPLUS)" : `+${extensionHours.toFixed(1)} HOURS`);
+  setText("impact-pct-reduction", `${pctCut}%`);
+  
+  const riskShift = el("impact-risk-shift");
+  if (riskShift) {
+    if (savedKw > 0) {
+      riskShift.textContent = "STABILIZED / MITIGATED";
+      riskShift.style.color = "var(--normal-color)";
+    } else {
+      riskShift.textContent = "DEFICIT PERSISTS";
+      riskShift.style.color = "var(--warning-color)";
+    }
+  }
+
+  const narrative = el("impact-narrative");
+  if (narrative) {
+    narrative.innerHTML = `Plan frees up <strong>${fmtKW(savedKw)} kW</strong> of buffer. ` +
+      `Essential life-support (${CRITICAL_LIFE_SUPPORT_KW} kW) remains completely preserved and prioritized.`;
+  }
+}
+
+const CRITICAL_LIFE_SUPPORT_KW = "7.0";
+
+function recalcSurvivalImpact() {
+  if (!currentPlan) return;
+  let selectedSaved = 0;
+  currentPlan.actions.forEach((act, idx) => {
+    const chk = el("act-" + idx);
+    if (chk && chk.checked) {
+      selectedSaved += act.saving_kw;
+    }
+  });
+
+  const newDemand = Math.max(1, currentPlan.demand_before_kw - selectedSaved);
+  setText("comp-demand-after", fmtKW(newDemand) + " kW");
+  setText("savings-kw", fmtKW(selectedSaved) + " kW");
+
+  // Re-estimate backup after with selectedSaved
+  apiGet("/api/state").then(state => {
+    const solar = state.solar_kw;
+    const net = solar - newDemand;
+    const cap = state.battery_capacity_kwh;
+    const energy = state.battery_kwh;
+    const minRes = cap * 0.10;
+    let newBackup = 0.0;
+    if (net >= 0) {
+      newBackup = 99.0;
+    } else if (energy > minRes) {
+      newBackup = ((energy - minRes) * 0.95) / Math.abs(net);
+    }
+    setText("comp-backup-after", fmtH(newBackup) + " h");
+    updateImpactMetrics(currentPlan.demand_before_kw, newDemand, currentPlan.backup_before_h, newBackup, selectedSaved);
+  });
+}
+
+el("btn-apply-plan").addEventListener("click", async () => {
+  if (!currentPlan) return;
+
+  // Collect accepted actions
+  let totalSaved = 0;
+  currentPlan.actions.forEach((action, idx) => {
+    const chk = el("act-" + idx);
+    action.accepted = chk ? chk.checked : false;
+    if (action.accepted) totalSaved += action.saving_kw;
+  });
+
+  if (totalSaved === 0) {
+    showToast("No actions selected.", "error");
+    return;
+  }
+
+  // Calculate new demand
+  try {
+    const state = await apiGet("/api/state");
+    const newDemand = Math.max(1, state.demand_kw - totalSaved);
+    await apiPost("/api/settings", { habitat_demand_kw: newDemand });
+    await refreshState();
+    await refreshForecast();
+
+    // Update slider
+    const sl = el("sl-demand");
+    if (sl) {
+      sl.value = newDemand;
+      el("val-demand").textContent = newDemand.toFixed(1) + " kW";
+    }
+
+    const applyRes = el("survival-apply-result");
+    applyRes.textContent = `✓ Applied — demand reduced by ${fmtKW(totalSaved)} kW to ${fmtKW(newDemand)} kW.`;
+    applyRes.classList.remove("hidden");
+
+    showToast(`Demand reduced to ${fmtKW(newDemand)} kW`, "success");
+  } catch(e) {
+    showToast("Apply failed: " + e.message, "error");
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+// Alert history clear button
+// ─────────────────────────────────────────────────────────────
+el("btn-clear-alerts").addEventListener("click", async () => {
+  // Reset server-side alert history by forcing a reset (soft reset only table)
+  el("alert-table-body").innerHTML = `<tr><td colspan="5" class="empty-row">Alert log cleared.</td></tr>`;
+  renderedAlertCount = 0;
+  showToast("Alert log cleared");
+});
+
+// ─────────────────────────────────────────────────────────────
+// Navigation
+// ─────────────────────────────────────────────────────────────
+function navigate(sectionId) {
+  document.querySelectorAll(".page-section").forEach(s => s.classList.remove("active"));
+  document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+
+  const section = el("section-" + sectionId);
+  if (section) section.classList.add("active");
+
+  const navItem = document.querySelector(`.nav-item[data-section="${sectionId}"]`);
+  if (navItem) navItem.classList.add("active");
+
+  // Close sidebar on mobile
+  if (window.innerWidth <= 860) {
+    el("sidebar").classList.remove("open");
+  }
+
+  // Trigger chart resize for newly visible canvases
+  setTimeout(() => {
+    [chartGenDemand, chartBattery, chartSubsystems,
+     chartForecastSim, chartForecastMain].forEach(ch => ch && ch.resize());
+  }, 50);
+
+  // Refresh forecast when navigating to forecast section
+  if (sectionId === "forecast") refreshForecast();
+  if (sectionId === "survival") refreshState();
+
+  // Trigger lunar canvas
+  if (sectionId === "about") drawLunarCanvas();
+}
+
+document.querySelectorAll(".nav-item").forEach(item => {
+  item.addEventListener("click", e => {
+    e.preventDefault();
+    navigate(item.dataset.section);
+  });
+});
+
+// Hamburger
+el("hamburger").addEventListener("click", () => {
+  el("sidebar").classList.toggle("open");
+});
+
+// ─────────────────────────────────────────────────────────────
+// Lunar canvas illustration (About page)
+// ─────────────────────────────────────────────────────────────
+function drawLunarCanvas() {
+  const canvas = el("lunar-canvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width, H = canvas.height;
+
+  // Clear
+  ctx.clearRect(0, 0, W, H);
+
+  // Space background
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0,   "#07090f");
+  grad.addColorStop(0.6, "#0c1220");
+  grad.addColorStop(1,   "#0f172a");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Stars
+  const rng = mulberry32(42);
+  for (let i = 0; i < 120; i++) {
+    const x = rng() * W, y = rng() * H * 0.7;
+    const r = rng() * 1.2 + 0.3;
+    const a = rng() * 0.7 + 0.3;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(232,234,240,${a})`;
+    ctx.fill();
+  }
+
+  // Earth glow (far left)
+  const earthGrad = ctx.createRadialGradient(0, 20, 10, 0, 20, 80);
+  earthGrad.addColorStop(0, "rgba(56,189,248,0.25)");
+  earthGrad.addColorStop(1, "rgba(56,189,248,0)");
+  ctx.fillStyle = earthGrad;
+  ctx.fillRect(0, 0, 80, 80);
+
+  // Sun (right)
+  const sunGrad = ctx.createRadialGradient(W - 60, 40, 8, W - 60, 40, 50);
+  sunGrad.addColorStop(0, "rgba(251,191,36,0.95)");
+  sunGrad.addColorStop(0.3, "rgba(251,191,36,0.4)");
+  sunGrad.addColorStop(1, "rgba(251,191,36,0)");
+  ctx.fillStyle = sunGrad;
+  ctx.fillRect(W - 110, 0, 110, 90);
+
+  // Lunar surface
+  const surfGrad = ctx.createLinearGradient(0, H * 0.55, 0, H);
+  surfGrad.addColorStop(0, "#1a2035");
+  surfGrad.addColorStop(1, "#0d1220");
+  ctx.fillStyle = surfGrad;
+  ctx.beginPath();
+  ctx.moveTo(0, H * 0.62);
+  // Gentle lunar terrain bumps
+  const terrainX = [0, 60, 120, 180, 230, 280, 340, 400, 460, 520, 580, W];
+  const terrainY = [0.72, 0.68, 0.64, 0.62, 0.66, 0.60, 0.63, 0.67, 0.61, 0.65, 0.70, 0.73];
+  ctx.moveTo(0, H);
+  terrainX.forEach((x, i) => {
+    ctx.lineTo(x, terrainY[i] * H);
+  });
+  ctx.lineTo(W, H);
+  ctx.closePath();
+  ctx.fill();
+
+  // Craters
+  [[100, H * 0.72, 18], [220, H * 0.68, 10], [380, H * 0.73, 14], [500, H * 0.69, 8]].forEach(([cx, cy, cr]) => {
+    ctx.beginPath();
+    ctx.arc(cx, cy, cr, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgba(100,120,160,0.3)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    const crG = ctx.createRadialGradient(cx, cy, 0, cx, cy, cr);
+    crG.addColorStop(0, "rgba(10,15,30,0.5)");
+    crG.addColorStop(1, "rgba(10,15,30,0)");
+    ctx.fillStyle = crG;
+    ctx.fill();
+  });
+
+  // Habitat dome
+  const habX = 300, habY = H * 0.635, habR = 26;
+  ctx.beginPath();
+  ctx.arc(habX, habY, habR, Math.PI, 0);
+  ctx.fillStyle = "#1e3a5f";
+  ctx.fill();
+  ctx.strokeStyle = "#38bdf8";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  // Dome light
+  const domeGrad = ctx.createRadialGradient(habX, habY - 8, 2, habX, habY, habR);
+  domeGrad.addColorStop(0, "rgba(103,232,249,0.15)");
+  domeGrad.addColorStop(1, "rgba(103,232,249,0)");
+  ctx.fillStyle = domeGrad;
+  ctx.beginPath();
+  ctx.arc(habX, habY, habR, Math.PI, 0);
+  ctx.fill();
+  // Habitat base
+  ctx.fillStyle = "#1e3a5f";
+  ctx.fillRect(habX - habR, habY - 2, habR * 2, 8);
+  ctx.strokeStyle = "#38bdf8";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(habX - habR, habY - 2, habR * 2, 8);
+
+  // Solar panels
+  [[-60, -6], [50, -4]].forEach(([dx, dy]) => {
+    const px = habX + dx, py = habY + dy;
+    // Panel
+    ctx.fillStyle = "#1e3a5f";
+    ctx.fillRect(px - 20, py, 40, 10);
+    ctx.strokeStyle = "#fbbf24";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(px - 20, py, 40, 10);
+    // Pole
+    ctx.beginPath();
+    ctx.moveTo(px, py + 10);
+    ctx.lineTo(px, habY + 6);
+    ctx.strokeStyle = "#38bdf8";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // Cell lines
+    for (let c = -12; c <= 12; c += 8) {
+      ctx.beginPath();
+      ctx.moveTo(px + c, py);
+      ctx.lineTo(px + c, py + 10);
+      ctx.strokeStyle = "rgba(103,232,249,0.4)";
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    }
+  });
+
+  // ShadowSignal label
+  ctx.fillStyle = "rgba(103,232,249,0.6)";
+  ctx.font = "bold 11px 'Courier New', monospace";
+  ctx.textAlign = "center";
+  ctx.fillText("ShadowSignal — Simulated Lunar Research Base", W / 2, H - 10);
+}
+
+function mulberry32(seed) {
+  return function() {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let z = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    z = z + Math.imul(z ^ z >>> 7, 61 | z) ^ z;
+    return ((z ^ z >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+// ─────────────────────────────────────────────────────────────
+// Guided Interactive Demo System (Hackathon Showcase)
+// ─────────────────────────────────────────────────────────────
+const DEMO_STEPS = [
+  {
+    step: 1,
+    title: "Step 1 — Baseline Operation (Normal Sunlight)",
+    desc: "Baseline test: Lunar base is receiving full solar irradiance (20.0 kW) against 12.0 kW habitat demand. Surplus (+8.0 kW) charges the battery with zero shortage risk.",
+    action: async () => {
+      navigate("overview");
+      await apiPost("/api/settings", { scenario: "normal" });
+      await handleControl("start");
+    }
+  },
+  {
+    step: 2,
+    title: "Step 2 — Observe Telemetry Stream",
+    desc: "Live Chart telemetry: Energy generation vs demand, battery state of charge (66%), and subsystem consumption donut. Note positive balance and nominal habitat status.",
+    action: async () => {
+      navigate("overview");
+    }
+  },
+  {
+    step: 3,
+    title: "Step 3 — Partial Shadow Intrusion",
+    desc: "Terrain shadow begins obstructing solar panels (illumination drops to 65%, 30% shadow). Solar drops to ~9 kW. Deficit begins draining the battery reserve.",
+    action: async () => {
+      navigate("simulation");
+      document.querySelectorAll(".scenario-btn").forEach(b => b.classList.remove("active"));
+      const btn = document.querySelector('.scenario-btn[data-scenario="partial_shadow"]');
+      if (btn) btn.classList.add("active");
+      await apiPost("/api/settings", { scenario: "partial_shadow" });
+      await refreshState();
+      await refreshForecast();
+      await syncSlidersFromServer();
+    }
+  },
+  {
+    step: 4,
+    title: "Step 4 — Severe Shadow & Shortage Forecast",
+    desc: "Deep crater shadow (75% shadow intensity). Solar output plummets to ~3.5 kW with a critical ~10.5 kW deficit. Prediction engine calculates battery depletion within ~2.4 hours!",
+    action: async () => {
+      navigate("forecast");
+      document.querySelectorAll(".scenario-btn").forEach(b => b.classList.remove("active"));
+      const btn = document.querySelector('.scenario-btn[data-scenario="severe_shadow"]');
+      if (btn) btn.classList.add("active");
+      await apiPost("/api/settings", { scenario: "severe_shadow" });
+      await refreshState();
+      await refreshForecast();
+      await syncSlidersFromServer();
+    }
+  },
+  {
+    step: 5,
+    title: "Step 5 — Generate Intelligent Survival Plan",
+    desc: "Activating Survival Mode: AI engine isolates deferrable loads (experiments, discretionary computing) while locking critical life-support (4 kW) and thermal systems (2.5 kW) as untouchable.",
+    action: async () => {
+      navigate("survival");
+      const plan = await apiGet("/api/survival_plan");
+      currentPlan = plan;
+      renderSurvivalPlan(plan);
+    }
+  },
+  {
+    step: 6,
+    title: "Step 6 — Apply Load-Shedding & Verify Mission Impact",
+    desc: "Applying load-shedding actions immediately reduces habitat demand by 2.0 kW, stabilizing power reserves and granting extended mission survival runway.",
+    action: async () => {
+      navigate("survival");
+      if (el("btn-apply-plan")) {
+        el("btn-apply-plan").click();
+      }
+    }
+  }
+];
+
+let currentDemoStep = 1;
+
+function showGuidedDemo(stepNum = 1) {
+  currentDemoStep = clamp(stepNum, 1, DEMO_STEPS.length);
+  const stepData = DEMO_STEPS[currentDemoStep - 1];
+
+  const banner = el("demo-banner");
+  if (banner) {
+    banner.style.display = "block";
+    setText("demo-step-title", stepData.title);
+    setText("demo-step-desc", stepData.desc);
+
+    // Update dots
+    document.querySelectorAll(".demo-dot").forEach(dot => {
+      const dStep = parseInt(dot.dataset.step, 10);
+      dot.className = "demo-dot" + 
+        (dStep === currentDemoStep ? " active" : "") +
+        (dStep < currentDemoStep ? " completed" : "");
+    });
+
+    // Update prev/next button text
+    const nextBtn = el("btn-demo-next");
+    if (nextBtn) {
+      if (currentDemoStep === DEMO_STEPS.length) {
+        nextBtn.innerHTML = `Finish Demo <i data-lucide="check"></i>`;
+      } else {
+        nextBtn.innerHTML = `Next Step <i data-lucide="chevron-right"></i>`;
+      }
+    }
+
+    if (window.lucide && window.lucide.createIcons) {
+      window.lucide.createIcons();
+    }
+  }
+
+  // Execute step action
+  if (stepData.action) {
+    stepData.action().catch(err => console.warn("Demo action error:", err));
+  }
+}
+
+function setupGuidedDemoListeners() {
+  const tourBtn = el("btn-guided-tour");
+  if (tourBtn) {
+    tourBtn.addEventListener("click", () => {
+      showGuidedDemo(1);
+      showToast("Starting Guided Hackathon Demo", "success");
+    });
+  }
+
+  const closeBtn = el("btn-close-demo");
+  if (closeBtn) {
+    closeBtn.addEventListener("click", () => {
+      const banner = el("demo-banner");
+      if (banner) banner.style.display = "none";
+      showToast("Guided demo closed");
+    });
+  }
+
+  const prevBtn = el("btn-demo-prev");
+  if (prevBtn) {
+    prevBtn.addEventListener("click", () => {
+      if (currentDemoStep > 1) {
+        showGuidedDemo(currentDemoStep - 1);
+      }
+    });
+  }
+
+  const nextBtn = el("btn-demo-next");
+  if (nextBtn) {
+    nextBtn.addEventListener("click", () => {
+      if (currentDemoStep < DEMO_STEPS.length) {
+        showGuidedDemo(currentDemoStep + 1);
+      } else {
+        const banner = el("demo-banner");
+        if (banner) banner.style.display = "none";
+        showToast("Demo complete! Habitat stabilized.", "success");
+      }
+    });
+  }
+
+  document.querySelectorAll(".demo-dot").forEach(dot => {
+    dot.addEventListener("click", () => {
+      const s = parseInt(dot.dataset.step, 10);
+      showGuidedDemo(s);
+    });
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// Bootstrap
+// ─────────────────────────────────────────────────────────────
+async function init() {
+  lucide.createIcons();
+  initCharts();
+  setupSliders();
+  setupGuidedDemoListeners();
+
+  // Load initial state
+  await refreshState();
+  await refreshForecast();
+  await syncSlidersFromServer();
+
+  // Draw lunar canvas (about page — pre-render even if not visible yet)
+  drawLunarCanvas();
+}
+
+document.addEventListener("DOMContentLoaded", init);
+
+
+</script>
+</body>
+</html>
